@@ -127,7 +127,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h3 className="text-4xl font-light text-[#cbbfbd] mb-4">
-              Editor's Choice
+              Editor&apos;s Choice
             </h3>
             <p className="text-[#888374] font-light text-lg">
               Handpicked selections from our literary curators
