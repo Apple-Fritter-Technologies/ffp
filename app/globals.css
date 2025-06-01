@@ -4,6 +4,15 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* custom css */
+  --color-background: #1f2017;
+  --color-foreground: #dedede;
+  --color-accent-1: #cbbfbd;
+  --color-accent-2: #888374;
+  --color-accent-3: #7d7765;
+  --font-title: var(--font-cormorant-garamond);
+  --font-primary: var(--font-overpass);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -119,4 +128,8 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+body {
+  @apply font-primary text-base antialiased;
 }
