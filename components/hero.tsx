@@ -46,10 +46,9 @@ export default function Hero() {
   }, [api]);
 
   return (
-    <section className="">
+    <section>
       <Carousel
         setApi={setApi}
-        className="w-full rounded-t-3xl bg-background pb-4"
         opts={{
           align: "start",
           loop: true,
@@ -87,7 +86,7 @@ export default function Hero() {
                   alt={slide.title}
                   height={800}
                   width={1200}
-                  className="object-cover w-full h-full rounded-3xl flex-1 lg:min-w-xl max-h-96 lg:max-h-[500px] shadow-lg"
+                  className="object-contain w-full h-full rounded-3xl flex-1 lg:min-w-xl max-h-96 lg:max-h-[500px]"
                   quality={100}
                   priority
                 />

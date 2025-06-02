@@ -37,3 +37,10 @@ export const heroSlides = [
     buttonText: "Buy Now",
   },
 ];
+
+export const navLinks = [
+  { name: "Books", href: "/books" },
+  { name: "Podcasts", href: "/podcasts" },
+  { name: "About", href: "/about" },
+  { name: "Contact", href: "/contact" },
+];

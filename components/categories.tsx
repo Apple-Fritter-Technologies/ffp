@@ -3,7 +3,7 @@ import React from "react";
 
 const Categories = () => {
   return (
-    <section className="py-24">
+    <section>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h3 className="text-4xl font-light text-[#cbbfbd] mb-4">

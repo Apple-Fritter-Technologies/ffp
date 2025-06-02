@@ -51,7 +51,7 @@ export default function RootLayout({
         className={`${cormorantGaramond.variable} ${overpass.variable} antialiased`}
       >
         <Navbar />
-        <main className="min-h-[80vh] bg-background mt-20">{children}</main>
+        <main className="min-h-[80vh] bg-background mt-12">{children}</main>
         <Footer />
       </body>
     </html>

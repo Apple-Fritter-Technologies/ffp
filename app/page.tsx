@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <div className="space-y-16">
       <Hero />
-      <div className="container mx-auto space-y-36 px-4 md:px-6">
+      <div className="container mx-auto space-y-16 px-4 md:px-6">
         <FeaturedBooks />
         <Categories />
         <Stats />
