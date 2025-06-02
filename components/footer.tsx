@@ -4,7 +4,7 @@ const Footer = () => {
   return (
     <footer className="bg-[#1f2017] border-t border-[#7d7765]/30 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 lg:gap-64">
           <div className="md:col-span-2">
             <h4 className="text-2xl font-light text-[#cbbfbd] mb-4 tracking-wider">
               FURLONG FIELD PRESS
