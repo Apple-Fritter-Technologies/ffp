@@ -40,7 +40,7 @@ const FeaturedBooks = () => {
         <div className="inline-flex items-center gap-2 bg-gradient-to-r from-background/10 to-accent-3/10 backdrop-blur-sm px-4 py-2 rounded-full border border-accent-3/20 mb-6">
           <div className="w-2 h-2 bg-accent-3 rounded-full animate-pulse"></div>
           <span className="text-accent-3 text-sm font-medium tracking-wide uppercase">
-            Editor's Choice
+            Editor&apos;s Choice
           </span>
         </div>
 
