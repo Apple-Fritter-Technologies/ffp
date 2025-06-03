@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/carousel";
 import { useEffect, useState } from "react";
 import { heroSlides } from "@/lib/data";
+import GridPattern from "./gird-pattern";
 
 export default function Hero() {
   const [api, setApi] = useState<CarouselApi>();
@@ -80,16 +81,21 @@ export default function Hero() {
                     <ChevronRight className="ml-2" />
                   </Link>
                 </div>
-                {/* Background image */}
-                <Image
-                  src={slide.image}
-                  alt={slide.title}
-                  height={800}
-                  width={1200}
-                  className="object-contain w-full h-full rounded-3xl flex-1 lg:min-w-xl max-h-96 lg:max-h-[500px]"
-                  quality={100}
-                  priority
-                />
+
+                {/* Slide image */}
+                <div className="relative">
+                  <GridPattern color="black" />
+
+                  <Image
+                    src={slide.image}
+                    alt={slide.title}
+                    height={800}
+                    width={1200}
+                    className="object-contain w-full h-full flex-1 lg:min-w-xl max-h-96 lg:max-h-[500px] relative z-10"
+                    quality={100}
+                    priority
+                  />
+                </div>
               </div>
             </CarouselItem>
           ))}
