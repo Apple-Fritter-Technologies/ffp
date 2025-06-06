@@ -19,9 +19,7 @@ const Stats = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-28 text-center">
           {statusData.map((item, index) => (
             <div key={index}>
-              <div className="text-6xl font-light text-accent-3 mb-2">
-                {item.value}
-              </div>
+              <div className="text-6xl font-light mb-2">{item.value}</div>
               <p className="text-[#888374] font-light text-xl">{item.label}</p>
             </div>
           ))}

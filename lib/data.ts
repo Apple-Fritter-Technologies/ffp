@@ -43,4 +43,20 @@ export const navLinks = [
   { name: "Podcasts", href: "/podcasts" },
   { name: "About", href: "/about" },
   { name: "Contact", href: "/contact" },
+  { name: "Blog", href: "https://bryandfurlong.substack.com/" },
+];
+
+export const footerDiscoverLinks = [
+  { name: "All Books", href: "/books" },
+  { name: "Bestsellers", href: "/bestsellers" },
+  { name: "New Releases", href: "/new-releases" },
+  { name: "Authors", href: "/authors" },
+];
+export const footerSupportLinks = [
+  { name: "Contact Us", href: "/contact" },
+  { name: "FAQs", href: "/faqs" },
+  { name: "Shipping Information", href: "/shipping" },
+  { name: "Returns & Exchanges", href: "/returns" },
+  { name: "Refund Policy", href: "/refund" },
+  { name: "Help Center", href: "/help" },
 ];
