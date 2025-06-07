@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BookOpen, Loader2 } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
 const LoadingPage = () => {
   return (
