@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Overpass } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const cormorantGaramond = Cormorant_Garamond({
   weight: ["400", "500", "600", "700"],
@@ -46,14 +47,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${cormorantGaramond.variable} ${overpass.variable} antialiased`}
-      >
-        <Navbar />
-        <main className="min-h-[80vh] bg-background mt-12">{children}</main>
-        <Footer />
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" suppressHydrationWarning>
+        <body
+          className={`${cormorantGaramond.variable} ${overpass.variable} antialiased`}
+          suppressHydrationWarning
+        >
+          <Navbar />
+          <main className="min-h-[80vh] bg-background mt-12">{children}</main>
+          <Footer />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

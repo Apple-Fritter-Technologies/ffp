@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Search, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { navLinks } from "@/lib/data";
+import { SignedIn, SignedOut, SignOutButton, UserButton } from "@clerk/nextjs";
+import { Button } from "./ui/button";
 
 interface NavLinkProps {
   href: string;
@@ -111,12 +113,19 @@ const Navbar = () => {
                 0
               </span>
             </Link>
-            <Link
-              href="/login"
-              className="bg-accent-1 text-foreground px-6 py-2 rounded-full font-medium hover:bg-accent-2 transition-colors"
-            >
-              Sign In
-            </Link>
+
+            <SignedOut>
+              <Link
+                href="/sign-in"
+                className="bg-accent-1 text-foreground px-6 py-2 rounded-full font-medium hover:bg-accent-2 transition-colors"
+              >
+                Sign In
+              </Link>
+            </SignedOut>
+
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
           </div>
 
           {/* Mobile Actions */}
@@ -137,9 +146,13 @@ const Navbar = () => {
               </span>
             </Link>
 
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
+
             {/* Hamburger button for mobile */}
             <button
-              className="relative z-50 p-2 focus:outline-none group"
+              className="relative z-50 focus:outline-none group"
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Toggle menu"
               aria-expanded={isOpen}
@@ -192,9 +205,17 @@ const Navbar = () => {
               </MobileNavLink>
             ))}
             <div className="border-t border-accent-2/20 my-2"></div>
-            <MobileNavLink href="/login" onClick={() => setIsOpen(false)}>
-              Sign In
-            </MobileNavLink>
+            <SignedOut>
+              <MobileNavLink href="/sign-in" onClick={() => setIsOpen(false)}>
+                Sign In
+              </MobileNavLink>
+            </SignedOut>
+
+            <SignedIn>
+              <SignOutButton>
+                <Button onClick={() => setIsOpen(false)}>Sign Out</Button>
+              </SignOutButton>
+            </SignedIn>
           </div>
         </div>
       </div>
