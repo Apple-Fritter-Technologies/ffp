@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Toaster } from "sonner";
 
 const cormorantGaramond = Cormorant_Garamond({
   weight: ["400", "500", "600", "700"],
@@ -53,9 +54,10 @@ export default function RootLayout({
           className={`${cormorantGaramond.variable} ${overpass.variable} antialiased`}
           suppressHydrationWarning
         >
-          <Navbar />
-          <main className="min-h-[80vh] bg-background mt-12">{children}</main>
-          <Footer />
+          <main className="min-h-screen">
+            {children}
+            <Toaster theme="light" richColors />
+          </main>
         </body>
       </html>
     </ClerkProvider>
