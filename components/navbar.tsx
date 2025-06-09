@@ -2,11 +2,18 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, ShoppingCart } from "lucide-react";
+import {
+  LayoutDashboard,
+  Package,
+  Search,
+  ShoppingCart,
+  User,
+} from "lucide-react";
 import Image from "next/image";
 import { navLinks } from "@/lib/data";
 import { SignedIn, SignedOut, SignOutButton, UserButton } from "@clerk/nextjs";
 import { Button } from "./ui/button";
+import { isAdmin } from "@/lib/server-utils";
 
 interface NavLinkProps {
   href: string;
@@ -43,6 +50,32 @@ function MobileNavLink({
     >
       {children}
     </Link>
+  );
+}
+
+function ClerkUserButton() {
+  return (
+    <UserButton>
+      <UserButton.MenuItems>
+        {isAdmin && (
+          <UserButton.Link
+            label="Dashboard"
+            labelIcon={<LayoutDashboard className="w-4 h-4" />}
+            href="/admin/dashboard"
+          />
+        )}
+        <UserButton.Link
+          label="Account"
+          labelIcon={<User className="w-4 h-4" />}
+          href="/account"
+        />
+        <UserButton.Link
+          label="Orders"
+          labelIcon={<Package className="w-4 h-4" />}
+          href="/orders"
+        />
+      </UserButton.MenuItems>
+    </UserButton>
   );
 }
 
@@ -124,7 +157,7 @@ const Navbar = () => {
             </SignedOut>
 
             <SignedIn>
-              <UserButton />
+              <ClerkUserButton />
             </SignedIn>
           </div>
 
@@ -147,7 +180,7 @@ const Navbar = () => {
             </Link>
 
             <SignedIn>
-              <UserButton />
+              <ClerkUserButton />
             </SignedIn>
 
             {/* Hamburger button for mobile */}

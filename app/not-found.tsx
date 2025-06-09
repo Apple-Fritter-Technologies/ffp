@@ -29,7 +29,7 @@ const NotFoundPage = () => {
           </h2>
           <p className="text-muted-foreground text-lg leading-relaxed">
             Oops! The book you&apos;re looking for seems to have been checked
-            out. Let's get you back to our collection.
+            out. Let&apos;s get you back to our collection.
           </p>
         </div>
 

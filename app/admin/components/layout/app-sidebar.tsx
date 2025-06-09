@@ -12,8 +12,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useMediaQuery } from "@/lib/common";
+
 import { adminNavItems } from "@/lib/data";
+import { useMediaQuery } from "@/lib/client-utils";
 
 interface NavItemProps {
   href: string;
@@ -98,7 +99,7 @@ const AppSidebar = () => {
   return (
     <div
       className={cn(
-        "flex flex-col h-screen border-r bg-primary/50 transition-all duration-300 backdrop-blur-xl z-20",
+        "flex flex-col h-screen border-r border-accent-3 bg-primary transition-all duration-300 backdrop-blur-xl z-20",
         isCollapsed ? "w-16" : "w-64 absolute left-0 top-0 md:static"
       )}
     >
@@ -108,12 +109,16 @@ const AppSidebar = () => {
           className="md:hidden h-screen w-screen absolute top-0 left-0 -z-10"
         />
       )}
-      <div className="flex h-14 items-center px-4 border-b">
-        {!isCollapsed && <div className="font-semibold text-lg">Photo MRA</div>}
+      <div className="flex h-14 items-center px-4 border-b border-accent-3">
+        {!isCollapsed && (
+          <Link href="/" className="font-semibold text-lg text-white">
+            <Button variant="ghost">FFP</Button>
+          </Link>
+        )}
         <Button
           variant="ghost"
           size="icon"
-          className={cn("ml-auto", isCollapsed && "mx-auto")}
+          className={cn("ml-auto text-white", isCollapsed && "mx-auto")}
           onClick={toggleSidebar}
         >
           {isCollapsed ? (

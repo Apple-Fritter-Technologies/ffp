@@ -1,3 +1,5 @@
+import { Book, Home, Mic, Package } from "lucide-react";
+
 export const heroSlides = [
   {
     id: 1,
@@ -59,4 +61,27 @@ export const footerSupportLinks = [
   { name: "Returns & Exchanges", href: "/returns" },
   { name: "Refund Policy", href: "/refund" },
   { name: "Help Center", href: "/help" },
+];
+
+export const adminNavItems = [
+  {
+    label: "Dashboard",
+    href: "/admin/dashboard",
+    icon: Home,
+  },
+  {
+    label: "Orders",
+    href: "/admin/dashboard/orders",
+    icon: Package,
+  },
+  {
+    label: "Books",
+    href: "/admin/dashboard/books",
+    icon: Book,
+  },
+  {
+    label: "Podcasts",
+    href: "/admin/dashboard/podcasts",
+    icon: Mic,
+  },
 ];
