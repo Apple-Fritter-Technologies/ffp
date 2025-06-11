@@ -1,10 +1,12 @@
 "use client";
 
-import { isAdmin } from "@/lib/server-utils";
-import { SignedIn, UserButton } from "@clerk/nextjs";
+import { SignedIn, useClerk, UserButton } from "@clerk/nextjs";
 import { LayoutDashboard, Package, User } from "lucide-react";
 
 function ClerkUserButton() {
+  const { user } = useClerk();
+  const isAdmin = user?.publicMetadata?.role === "admin";
+
   return (
     <UserButton>
       <UserButton.MenuItems>

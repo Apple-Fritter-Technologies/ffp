@@ -1,6 +1,5 @@
 "use client";
 
-import { isAdmin } from "@/lib/server-utils";
 import { useClerk } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -10,9 +9,10 @@ import AppHeader from "../components/layout/app-header";
 import Footer from "@/components/footer";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { isSignedIn, loaded } = useClerk();
+  const { isSignedIn, loaded, user } = useClerk();
+  const isAdmin = user?.publicMetadata?.role === "admin";
 
-  if (loaded && !isSignedIn && !isAdmin) {
+  if (loaded && (!isSignedIn || !isAdmin)) {
     redirect("/");
   }
 

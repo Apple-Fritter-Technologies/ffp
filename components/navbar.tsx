@@ -11,9 +11,14 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { navLinks } from "@/lib/data";
-import { SignedIn, SignedOut, SignOutButton, UserButton } from "@clerk/nextjs";
+import {
+  SignedIn,
+  SignedOut,
+  SignOutButton,
+  useClerk,
+  UserButton,
+} from "@clerk/nextjs";
 import { Button } from "./ui/button";
-import { isAdmin } from "@/lib/server-utils";
 
 interface NavLinkProps {
   href: string;
@@ -54,6 +59,9 @@ function MobileNavLink({
 }
 
 function ClerkUserButton() {
+  const { user } = useClerk();
+  const isAdmin = user?.publicMetadata?.role === "admin";
+
   return (
     <UserButton>
       <UserButton.MenuItems>
