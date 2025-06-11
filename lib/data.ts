@@ -1,4 +1,4 @@
-import { Book, Home, Mic, Package } from "lucide-react";
+import { Book, Bookmark, Home, Mail, Mic, Package, User } from "lucide-react";
 
 export const heroSlides = [
   {
@@ -83,5 +83,20 @@ export const adminNavItems = [
     label: "Podcasts",
     href: "/admin/dashboard/podcasts",
     icon: Mic,
+  },
+  {
+    label: "Genres",
+    href: "/admin/dashboard/genres",
+    icon: Bookmark,
+  },
+  {
+    label: "Users",
+    href: "/admin/dashboard/users",
+    icon: User,
+  },
+  {
+    label: "Messages",
+    href: "/admin/dashboard/messages",
+    icon: Mail,
   },
 ];
