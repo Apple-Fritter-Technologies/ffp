@@ -125,8 +125,8 @@ const DashboardGenresPage = () => {
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Something went wrong</h3>
                 <p className="text-muted-foreground">
-                  We couldn't load the genres at this time. Please try again
-                  later.
+                  We couldn&apos;t load the genres at this time. Please try
+                  again later.
                 </p>
               </div>
               <Button
@@ -270,7 +270,8 @@ const DashboardGenresPage = () => {
 
           {genres?.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No genres available. Click "Add Genre" to create your first genre.
+              No genres available. Click &quot;Add Genre&quot; to create your
+              first genre.
             </div>
           )}
         </CardContent>

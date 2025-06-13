@@ -128,7 +128,7 @@ const DashboardBooksPage = () => {
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Something went wrong</h3>
                 <p className="text-muted-foreground">
-                  We couldn't load the books at this time. Please try again
+                  We couldn&apos;t load the books at this time. Please try again
                   later.
                 </p>
               </div>
@@ -221,7 +221,7 @@ const DashboardBooksPage = () => {
                   <TableRow key={book.id}>
                     <TableCell>
                       {book.imageUrl ? (
-                        <Image
+                        <img
                           src={book.imageUrl}
                           alt={book.title}
                           width={40}
@@ -276,7 +276,8 @@ const DashboardBooksPage = () => {
 
           {books.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No books available. Click "Add Book" to create your first book.
+              No books available. Click &quot;Add Book&quot; to create your
+              first book.
             </div>
           )}
         </CardContent>

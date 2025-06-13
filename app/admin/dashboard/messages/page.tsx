@@ -171,7 +171,7 @@ const DashboardContactsPage = () => {
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Something went wrong</h3>
                 <p className="text-muted-foreground">
-                  We couldn't load the contact messages at this time.
+                  We couldn&apos;t load the contact messages at this time.
                 </p>
               </div>
               <Button onClick={fetchContacts} variant="outline">

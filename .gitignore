@@ -43,7 +43,8 @@ next-env.d.ts
 # clerk configuration (can include secrets)
 /.clerk/
 
-/lib/generated/prisma
+# prisma
+/lib/generated/
 
 # todo
-todo.md
+todo.mdx

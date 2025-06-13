@@ -109,7 +109,7 @@ const DashboardUsersPage = () => {
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Something went wrong</h3>
                 <p className="text-muted-foreground">
-                  We couldn't load the users at this time. Please try again
+                  We couldn&apos;t load the users at this time. Please try again
                   later.
                 </p>
               </div>
@@ -254,7 +254,8 @@ const DashboardUsersPage = () => {
 
           {users?.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No users available. Click "Add User" to create your first user.
+              No users available. Click &quot;Add User&quot; to create your
+              first user.
             </div>
           )}
         </CardContent>

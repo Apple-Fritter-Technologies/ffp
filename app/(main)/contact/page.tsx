@@ -136,7 +136,7 @@ const ContactPage = () => {
         </div>
 
         <h1 className="text-4xl md:text-5xl font-bold font-title mb-4">
-          We'd Love To Hear From
+          We&apos;d Love To Hear From
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-2 to-accent-3">
             {" "}
             You
@@ -304,7 +304,7 @@ const ContactPage = () => {
               Send Us a Message
             </CardTitle>
             <CardDescription>
-              Fill out the form below and we'll respond as soon as possible
+              Fill out the form below and we&apos;ll respond as soon as possible
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -313,8 +313,8 @@ const ContactPage = () => {
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <AlertTitle>Success!</AlertTitle>
                 <AlertDescription>
-                  Thank you for reaching out. We'll get back to you as soon as
-                  possible.
+                  Thank you for reaching out. We&apos;ll get back to you as soon
+                  as possible.
                 </AlertDescription>
               </Alert>
             )}

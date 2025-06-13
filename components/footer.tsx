@@ -4,7 +4,6 @@ import {
   navLinks,
   socialLinks,
 } from "@/lib/data";
-import { Facebook, Icon, Instagram, Twitter, Youtube } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 

@@ -109,8 +109,8 @@ const DashboardPodcastsPage = () => {
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Something went wrong</h3>
                 <p className="text-muted-foreground">
-                  We couldn't load the podcasts at this time. Please try again
-                  later.
+                  We couldn&apos;t load the podcasts at this time. Please try
+                  again later.
                 </p>
               </div>
               <Button
@@ -235,8 +235,8 @@ const DashboardPodcastsPage = () => {
 
           {podcasts?.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No podcasts available. Click "Add Podcast" to create your first
-              podcast.
+              No podcasts available. Click &quot;Add Podcast&quot; to create
+              your first podcast.
             </div>
           )}
         </CardContent>
