@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(order, { status: 200 });
     } else {
       // Get all orders with optional filters
-      let whereClause: any = {};
+      const whereClause: any = {};
 
       // If not admin, only show user's own orders
       if (auth.user?.metadata?.role !== "admin") {
