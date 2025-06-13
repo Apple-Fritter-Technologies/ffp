@@ -1,14 +1,18 @@
 import {
   Book,
   Bookmark,
+  BookOpenIcon,
   Facebook,
   Home,
   Instagram,
   Mail,
+  MessageCircleIcon,
   Mic,
   Package,
+  ShoppingCartIcon,
   Twitter,
   User,
+  UsersIcon,
   Youtube,
 } from "lucide-react";
 
@@ -165,5 +169,32 @@ export const faqList = [
     question: "Do you ship internationally?",
     answer:
       "Yes, we ship to most countries. International shipping rates vary by location and order size.",
+  },
+];
+
+export const quickActions = [
+  {
+    label: "Add New Book",
+    href: "/admin/books/new",
+    icon: BookOpenIcon,
+    color: "bg-blue-500/10 text-blue-500",
+  },
+  {
+    label: "Manage Users",
+    href: "/admin/users",
+    icon: UsersIcon,
+    color: "bg-green-500/10 text-green-500",
+  },
+  {
+    label: "View Orders",
+    href: "/admin/orders",
+    icon: ShoppingCartIcon,
+    color: "bg-purple-500/10 text-purple-500",
+  },
+  {
+    label: "Messages",
+    href: "/admin/messages",
+    icon: MessageCircleIcon,
+    color: "bg-orange-500/10 text-orange-500",
   },
 ];

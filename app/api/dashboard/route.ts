@@ -11,11 +11,22 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch dashboard data
-    const [totalBooks, totalUsers, totalOrders] = await Promise.all([
+    const [
+      totalBooks,
+      totalUsers,
+      totalOrders,
+      unreadMessages,
+      totalGenres,
+      totalPodcasts,
+    ] = await Promise.all([
       prisma.book.count(),
       prisma.user.count(),
       prisma.order.count(),
+      prisma.contact.count({ where: { isRead: false } }),
+      prisma.genre.count(),
+      prisma.podcast.count(),
     ]);
+
     const recentOrders = await prisma.order.findMany({
       orderBy: { createdAt: "desc" },
       take: 5,
@@ -26,6 +37,9 @@ export async function GET(req: NextRequest) {
         totalUsers,
         totalOrders,
         recentOrders,
+        unreadMessages,
+        totalGenres,
+        totalPodcasts,
       },
       { status: 200 }
     );

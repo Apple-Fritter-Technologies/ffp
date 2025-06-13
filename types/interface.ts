@@ -53,3 +53,31 @@ export interface Contact {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export interface DashboardData {
+  totalBooks: number;
+  totalUsers: number;
+  totalOrders: number;
+  unreadMessages: number;
+  totalGenres: number;
+  totalPodcasts: number;
+  recentOrders: Order[];
+}
+
+export interface Order {
+  id: string;
+  createdAt: string;
+  // Add other order properties as needed
+}
+
+export interface User {
+  id: string;
+  clerkId: string;
+  email: string;
+  name: string;
+  role: "USER" | "ADMIN";
+  createdAt: string;
+  updatedAt: string;
+  orders?: Order[];
+  Contact?: Contact[];
+}
