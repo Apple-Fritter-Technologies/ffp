@@ -81,3 +81,11 @@ export interface User {
   orders?: Order[];
   Contact?: Contact[];
 }
+
+export enum OrderStatus {
+  PENDING = "PENDING",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED",
+  PROCESSING = "PROCESSING",
+  SHIPPED = "SHIPPED",
+}
