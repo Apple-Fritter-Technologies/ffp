@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,30 +21,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-
-interface Genre {
-  id: string;
-  name: string;
-}
-
-interface Book {
-  id: string;
-  title: string;
-  description?: string;
-  price: number;
-  genreId: string;
-  author?: string;
-  imageUrl?: string;
-  buttonText?: string;
-  isAvailable: boolean;
-  isFeatured: boolean;
-  genre: {
-    id: string;
-    name: string;
-  };
-}
+import { Book, Genre } from "@/types/interface";
+import { addBook, deleteBook, updateBook } from "@/hooks/actions/book-actions";
 
 interface BookModalProps {
   isOpen: boolean;
@@ -64,10 +44,12 @@ const BookModal: React.FC<BookModalProps> = ({
   onSuccess,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Book>({
+    id: book?.id || "",
+    genre: book?.genre || { id: "", name: "" },
     title: book?.title || "",
     description: book?.description || "",
-    price: book?.price?.toString() || "",
+    price: book?.price || 0,
     genreId: book?.genreId || "",
     author: book?.author || "",
     imageUrl: book?.imageUrl || "",
@@ -79,12 +61,14 @@ const BookModal: React.FC<BookModalProps> = ({
   const isEdit = mode === "edit";
 
   // Reset form when modal opens/closes or book changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       setFormData({
+        id: book?.id || "",
+        genre: book?.genre || { id: "", name: "" },
         title: book?.title || "",
         description: book?.description || "",
-        price: book?.price?.toString() || "",
+        price: book?.price || 0,
         genreId: book?.genreId || "",
         author: book?.author || "",
         imageUrl: book?.imageUrl || "",
@@ -100,7 +84,7 @@ const BookModal: React.FC<BookModalProps> = ({
       toast.error("Title is required");
       return false;
     }
-    if (!formData.price || parseFloat(formData.price) <= 0) {
+    if (!formData.price || formData.price <= 0) {
       toast.error("Valid price is required");
       return false;
     }
@@ -116,24 +100,17 @@ const BookModal: React.FC<BookModalProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/books", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          price: parseFloat(formData.price),
-        }),
+      const response = await addBook({
+        ...formData,
+        price: formData.price,
       });
 
-      if (response.ok) {
+      if (response.error) {
+        toast.error(response.error);
+      } else {
         toast.success("Book created successfully");
         onClose();
         onSuccess();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create book");
       }
     } catch (error) {
       toast.error(
@@ -148,24 +125,18 @@ const BookModal: React.FC<BookModalProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/admin/books/${book.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          price: parseFloat(formData.price),
-        }),
+      const response = await updateBook({
+        ...formData,
+        id: book.id, // Ensure we pass the existing book ID
+        price: formData.price,
       });
 
-      if (response.ok) {
+      if (response.error) {
+        toast.error(response.error);
+      } else {
         toast.success("Book updated successfully");
         onClose();
         onSuccess();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update book");
       }
     } catch (error) {
       toast.error(
@@ -188,17 +159,14 @@ const BookModal: React.FC<BookModalProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/admin/books/${book.id}`, {
-        method: "DELETE",
-      });
+      const response = await deleteBook(book.id);
 
-      if (response.ok) {
+      if (response.error) {
+        toast.error(response.error);
+      } else {
         toast.success("Book deleted successfully");
         onClose();
         onSuccess();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete book");
       }
     } catch (error) {
       toast.error(
@@ -279,7 +247,10 @@ const BookModal: React.FC<BookModalProps> = ({
                 step="0.01"
                 value={formData.price}
                 onChange={(e) =>
-                  setFormData({ ...formData, price: e.target.value })
+                  setFormData({
+                    ...formData,
+                    price: parseFloat(e.target.value) || 0,
+                  })
                 }
                 placeholder="0.00"
                 disabled={isLoading}
@@ -359,23 +330,26 @@ const BookModal: React.FC<BookModalProps> = ({
               <Label htmlFor="isFeatured">Featured</Label>
             </div>
           </div>
-
-          {isEdit && (
-            <div className="border-t pt-4 mt-4">
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={isLoading}
-                className="w-full"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Book
-              </Button>
-            </div>
-          )}
         </div>
 
         <DialogFooter>
+          {isEdit && (
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isLoading}
+              className="mr-auto w-full sm:w-auto"
+            >
+              {" "}
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              <span className="sm:hidden">Delete Book</span>
+            </Button>
+          )}
+
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>

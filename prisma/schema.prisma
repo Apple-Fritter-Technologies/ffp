@@ -22,14 +22,15 @@ enum OrderStatus {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  clerkId   String   @unique
-  email     String   @unique
+  id        String    @id @default(uuid())
+  clerkId   String    @unique
+  email     String    @unique
   name      String?
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      Role      @default(USER)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   orders    Order[]
+  Contact   Contact[]
 
   @@map("users")
 }
@@ -114,4 +115,20 @@ model OrderItem {
   @@index([orderId])
   @@index([bookId])
   @@map("order_items")
+}
+
+model Contact {
+  id        String   @id @default(uuid())
+  email     String
+  name      String
+  message   String
+  isRead    Boolean  @default(false)
+  subject   String?
+  userId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("contacts")
 }

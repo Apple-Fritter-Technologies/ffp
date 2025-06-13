@@ -1,4 +1,16 @@
-import { Book, Bookmark, Home, Mail, Mic, Package, User } from "lucide-react";
+import {
+  Book,
+  Bookmark,
+  Facebook,
+  Home,
+  Instagram,
+  Mail,
+  Mic,
+  Package,
+  Twitter,
+  User,
+  Youtube,
+} from "lucide-react";
 
 export const heroSlides = [
   {
@@ -54,6 +66,7 @@ export const footerDiscoverLinks = [
   { name: "New Releases", href: "/new-releases" },
   { name: "Authors", href: "/authors" },
 ];
+
 export const footerSupportLinks = [
   { name: "Contact Us", href: "/contact" },
   { name: "FAQs", href: "/faqs" },
@@ -98,5 +111,59 @@ export const adminNavItems = [
     label: "Messages",
     href: "/admin/dashboard/messages",
     icon: Mail,
+  },
+];
+
+export const socialLinks = [
+  {
+    name: "Twitter",
+    href: "https://twitter.com/bryandfurlong",
+    icon: Twitter,
+  },
+  {
+    name: "Facebook",
+    href: "https://facebook.com/bryandfurlong",
+    icon: Facebook,
+  },
+  {
+    name: "Instagram",
+    href: "https://instagram.com/bryandfurlong",
+    icon: Instagram,
+  },
+  {
+    name: "YouTube",
+    href: "https://www.youtube.com/@householdreformationpodcast",
+    icon: Youtube,
+  },
+];
+
+export const formSubjects = [
+  "General Inquiry",
+  "Book Purchase",
+  "Event Collaboration",
+  "Media Request",
+  "Other",
+];
+
+export const faqList = [
+  {
+    question: "What are your shipping rates?",
+    answer:
+      "We offer free shipping on orders over $35. Standard shipping is $4.99, and expedited shipping is available for $9.99.",
+  },
+  {
+    question: "How can I track my order?",
+    answer:
+      "Once your order ships, you'll receive a tracking number via email. You can also log in to your account to view order status.",
+  },
+  {
+    question: "What is your return policy?",
+    answer:
+      "We accept returns within 30 days of purchase. Books must be in original condition with receipt.",
+  },
+  {
+    question: "Do you ship internationally?",
+    answer:
+      "Yes, we ship to most countries. International shipping rates vary by location and order size.",
   },
 ];

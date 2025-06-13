@@ -44,15 +44,17 @@ const DashboardBooksPage = () => {
         setError(true);
         toast.error(res.error);
       } else {
-        setBooks(res.data);
+        setBooks(res);
       }
-    } catch (error) {
+    } catch (err: unknown) {
       setError(true);
       toast.error("Failed to fetch books");
     } finally {
       setIsLoading(false);
     }
   };
+
+  console.log("Books:", books);
 
   // Fetch genres
   const fetchGenres = async () => {
@@ -64,9 +66,9 @@ const DashboardBooksPage = () => {
         setError(true);
         toast.error(res.error);
       } else {
-        setGenres(res.data);
+        setGenres(res);
       }
-    } catch (error) {
+    } catch (err: unknown) {
       setError(true);
       toast.error("Failed to fetch genres");
     } finally {
@@ -96,7 +98,7 @@ const DashboardBooksPage = () => {
     (book) =>
       book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       book.author?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      book.genre.name.toLowerCase().includes(searchTerm.toLowerCase())
+      book.genre?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Loading state
@@ -235,9 +237,9 @@ const DashboardBooksPage = () => {
                     <TableCell className="font-medium">{book.title}</TableCell>
                     <TableCell>{book.author || "N/A"}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{book.genre.name}</Badge>
+                      <Badge variant="secondary">{book.genre?.name}</Badge>
                     </TableCell>
-                    <TableCell>${book.price.toFixed(2)}</TableCell>
+                    <TableCell>${book.price}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         {book.isAvailable && (

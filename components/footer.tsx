@@ -1,5 +1,10 @@
-import { footerDiscoverLinks, footerSupportLinks, navLinks } from "@/lib/data";
-import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
+import {
+  footerDiscoverLinks,
+  footerSupportLinks,
+  navLinks,
+  socialLinks,
+} from "@/lib/data";
+import { Facebook, Icon, Instagram, Twitter, Youtube } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -29,26 +34,15 @@ const Footer = () => {
 
             {/* Social links - moved up for better mobile experience */}
             <div className="flex items-center gap-5 pt-2">
-              <SocialLink
-                href="https://www.instagram.com/bryandfurlong/"
-                icon={<Instagram className="w-5 h-5 text-white" />}
-                label="Instagram"
-              />
-              <SocialLink
-                href="https://twitter.com/bryandfurlong"
-                icon={<Twitter className="w-5 h-5 text-white" />}
-                label="Twitter"
-              />
-              <SocialLink
-                href="https://www.facebook.com/share/1Uwr4ufas7/"
-                icon={<Facebook className="w-5 h-5 text-white" />}
-                label="Facebook"
-              />
-              <SocialLink
-                href="https://www.youtube.com/@householdreformationpodcast"
-                icon={<Youtube className="w-5 h-5 text-white" />}
-                label="YouTube"
-              />
+              {socialLinks.map((link) => (
+                <SocialLink
+                  key={link.href}
+                  href={link.href}
+                  icon={<link.icon className="w-5 h-5 text-white" />}
+                  label={link.name}
+                />
+              ))}
+
               <SocialLink
                 href="https://open.spotify.com/show/1Uwr4ufas7"
                 icon={

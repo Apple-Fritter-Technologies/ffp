@@ -1,5 +1,3 @@
-"use server";
-
 import { getSessionToken } from "@/lib/server-utils";
 import { ApiUrl } from "@/lib/utils";
 import { Genre } from "@/types/interface";
@@ -65,7 +63,7 @@ export const updateGenre = async (genre: Genre) => {
   }
 
   try {
-    const res = await axios.put(`${ApiUrl}/api/genres`, genre, {
+    const res = await axios.put(`${ApiUrl}/api/genres?id=${genre.id}`, genre, {
       headers: { Authorization: `Bearer ${sessionToken}` },
     });
 
@@ -77,6 +75,30 @@ export const updateGenre = async (genre: Genre) => {
       };
     }
     return { error: "Failed to update genre" };
+  }
+};
+
+export const reorderGenres = async (orderedIds: string[]) => {
+  const sessionToken = await getSessionToken();
+  if (!sessionToken) {
+    return { error: "Unauthorized" };
+  }
+
+  try {
+    const res = await axios.patch(
+      `${ApiUrl}/api/genres`,
+      { orderedIds },
+      { headers: { Authorization: `Bearer ${sessionToken}` } }
+    );
+
+    return res.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      return {
+        error: error.response?.data?.error || "Failed to reorder genres",
+      };
+    }
+    return { error: "Failed to reorder genres" };
   }
 };
 

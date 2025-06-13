@@ -27,4 +27,29 @@ export interface Book {
 export interface Genre {
   id: string;
   name: string;
+  displayOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  books?: Book[];
+}
+
+export interface Podcast {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  videoUrl: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Contact {
+  id?: string;
+  name: string;
+  email: string;
+  subject?: string;
+  message: string;
+  isRead?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

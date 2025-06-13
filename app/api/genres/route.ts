@@ -3,8 +3,6 @@ import { verifySession } from "@/lib/server-utils";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  console.log("Fetching genres...");
-
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -13,6 +11,9 @@ export async function GET(req: NextRequest) {
       // get genre by id
       const genre = await prisma.genre.findUnique({
         where: { id },
+        include: {
+          books: true,
+        },
       });
 
       if (!genre) {
@@ -23,6 +24,9 @@ export async function GET(req: NextRequest) {
     } else {
       // get all genres
       const genres = await prisma.genre.findMany({
+        include: {
+          books: true,
+        },
         orderBy: {
           displayOrder: "asc",
         },
@@ -41,12 +45,12 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await verifySession(req);
 
-    if (!auth.authorized || auth.user?.role !== "ADMIN") {
+    if (!auth.authorized || auth.user?.metadata?.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const genreData = await req.json();
-    const { name, displayOrder } = genreData;
+    const { name } = genreData;
 
     if (!name) {
       return NextResponse.json(
@@ -67,10 +71,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // get count of existing genres
+    const genreCount = await prisma.genre.count();
+
     const newGenre = await prisma.genre.create({
       data: {
         name,
-        displayOrder: displayOrder ?? 0,
+        displayOrder: genreCount,
       },
       include: {
         books: true,
@@ -90,7 +97,7 @@ export async function PUT(req: NextRequest) {
   try {
     const auth = await verifySession(req);
 
-    if (!auth.authorized || auth.user?.role !== "ADMIN") {
+    if (!auth.authorized || auth.user?.metadata?.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -159,11 +166,76 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+// reorder genres
+export async function PATCH(req: NextRequest) {
+  try {
+    const auth = await verifySession(req);
+    if (!auth.authorized || auth.user?.metadata?.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { orderedIds } = body;
+
+    // Validate required fields
+    if (!orderedIds || !Array.isArray(orderedIds) || orderedIds.length === 0) {
+      return NextResponse.json(
+        { error: "Valid orderedIds array is required" },
+        { status: 400 }
+      );
+    }
+
+    // Verify all IDs exist in the database
+    const existingItems = await prisma.genre.findMany({
+      where: {
+        id: {
+          in: orderedIds,
+        },
+      },
+    });
+
+    if (existingItems.length !== orderedIds.length) {
+      return NextResponse.json(
+        { error: "One or more genre items do not exist" },
+        { status: 400 }
+      );
+    }
+
+    // Update the order of each item using a transaction
+    await prisma.$transaction(
+      orderedIds.map((id, index) =>
+        prisma.genre.update({
+          where: { id },
+          data: { displayOrder: index },
+        })
+      )
+    );
+
+    // Fetch the updated genre items
+    const updatedItems = await prisma.genre.findMany({
+      orderBy: { displayOrder: "asc" },
+    });
+
+    return NextResponse.json(
+      {
+        message: "Genre items reordered successfully",
+        items: updatedItems,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error reordering genre items:", error);
+    return NextResponse.json(
+      { error: "Failed to reorder genre items" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   try {
     const auth = await verifySession(req);
-
-    if (!auth.authorized || auth.user?.role !== "ADMIN") {
+    if (!auth.authorized || auth.user?.metadata?.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

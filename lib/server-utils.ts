@@ -20,16 +20,14 @@ export const verifySession = async (
   req: NextRequest
 ): Promise<AuthResponse> => {
   const authHeader = req.headers.get("authorization");
-
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return { authorized: false, error: "Authentication required" };
   }
-
   const token = authHeader.slice(7).trim();
 
   try {
     const decoded = await verifyToken(token, {
-      jwtKey: process.env.CLERK_JWKS_URL,
+      secretKey: process.env.CLERK_SECRET_KEY,
     });
 
     return { authorized: true, user: decoded };

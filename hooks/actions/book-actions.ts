@@ -1,5 +1,3 @@
-"use server";
-
 import { getSessionToken } from "@/lib/server-utils";
 import { ApiUrl } from "@/lib/utils";
 import { Book } from "@/types/interface";
@@ -65,7 +63,7 @@ export const updateBook = async (book: Book) => {
   }
 
   try {
-    const res = await axios.put(`${ApiUrl}/api/books`, book, {
+    const res = await axios.put(`${ApiUrl}/api/books?id=${book.id}`, book, {
       headers: { Authorization: `Bearer ${sessionToken}` },
     });
 

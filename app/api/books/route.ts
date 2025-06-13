@@ -3,8 +3,6 @@ import { verifySession } from "@/lib/server-utils";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  console.log("Fetching books...");
-
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -13,6 +11,9 @@ export async function GET(req: NextRequest) {
       // get book by id
       const book = await prisma.book.findUnique({
         where: { id },
+        include: {
+          genre: true,
+        },
       });
 
       if (!book) {
@@ -25,9 +26,6 @@ export async function GET(req: NextRequest) {
       const books = await prisma.book.findMany({
         include: {
           genre: true,
-        },
-        orderBy: {
-          createdAt: "desc",
         },
       });
       return NextResponse.json(books, { status: 200 });
@@ -43,8 +41,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const auth = await verifySession(req);
-
-    if (!auth.authorized || auth.user?.role !== "ADMIN") {
+    if (!auth.authorized || auth.user?.metadata?.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -107,7 +104,7 @@ export async function PUT(req: NextRequest) {
   try {
     const auth = await verifySession(req);
 
-    if (!auth.authorized || auth.user?.role !== "ADMIN") {
+    if (!auth.authorized || auth.user?.metadata?.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -191,7 +188,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const auth = await verifySession(req);
 
-    if (!auth.authorized || auth.user?.role !== "ADMIN") {
+    if (!auth.authorized || auth.user?.metadata?.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
