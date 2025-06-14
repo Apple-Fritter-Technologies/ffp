@@ -1,3 +1,5 @@
+"use server";
+
 import { getSessionToken } from "@/lib/server-utils";
 import { ApiUrl } from "@/lib/utils";
 import axios from "axios";

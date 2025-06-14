@@ -56,6 +56,10 @@ const BookModal: React.FC<BookModalProps> = ({
     buttonText: book?.buttonText || "Buy Now",
     isAvailable: book?.isAvailable ?? true,
     isFeatured: book?.isFeatured ?? false,
+    productType: book?.productType || "physical",
+    downloadUrl: book?.downloadUrl || "",
+    fileSize: book?.fileSize || "",
+    format: book?.format || "",
   });
 
   const isEdit = mode === "edit";
@@ -75,6 +79,10 @@ const BookModal: React.FC<BookModalProps> = ({
         buttonText: book?.buttonText || "Buy Now",
         isAvailable: book?.isAvailable ?? true,
         isFeatured: book?.isFeatured ?? false,
+        productType: book?.productType || "physical",
+        downloadUrl: book?.downloadUrl || "",
+        fileSize: book?.fileSize || "",
+        format: book?.format || "",
       });
     }
   }, [isOpen, book]);
@@ -92,6 +100,15 @@ const BookModal: React.FC<BookModalProps> = ({
       toast.error("Genre is required");
       return false;
     }
+
+    // Additional validation for digital products
+    if (formData.productType === "digital") {
+      if (!formData.downloadUrl?.trim()) {
+        toast.error("Download URL is required for digital products");
+        return false;
+      }
+    }
+
     return true;
   };
 
@@ -186,7 +203,7 @@ const BookModal: React.FC<BookModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Book" : "Create New Book"}</DialogTitle>
           <DialogDescription>
@@ -238,7 +255,7 @@ const BookModal: React.FC<BookModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="price">Price *</Label>
               <Input
@@ -277,6 +294,24 @@ const BookModal: React.FC<BookModalProps> = ({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="productType">Product Type *</Label>
+              <Select
+                value={formData.productType}
+                onValueChange={(value: "physical" | "digital") =>
+                  setFormData({ ...formData, productType: value })
+                }
+                disabled={isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="physical">Physical</SelectItem>
+                  <SelectItem value="digital">Digital</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -305,6 +340,53 @@ const BookModal: React.FC<BookModalProps> = ({
               />
             </div>
           </div>
+
+          {/* Digital Product Fields */}
+          {formData.productType === "digital" && (
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+              <h3 className="text-sm font-medium">Digital Product Details</h3>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="downloadUrl">Download URL *</Label>
+                  <Input
+                    id="downloadUrl"
+                    value={formData.downloadUrl}
+                    onChange={(e) =>
+                      setFormData({ ...formData, downloadUrl: e.target.value })
+                    }
+                    placeholder="https://download-link.com"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fileSize">File Size</Label>
+                    <Input
+                      id="fileSize"
+                      value={formData.fileSize}
+                      onChange={(e) =>
+                        setFormData({ ...formData, fileSize: e.target.value })
+                      }
+                      placeholder="e.g., 25 MB"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="format">Format</Label>
+                    <Input
+                      id="format"
+                      value={formData.format}
+                      onChange={(e) =>
+                        setFormData({ ...formData, format: e.target.value })
+                      }
+                      placeholder="e.g., PDF, EPUB"
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-6">
             <div className="flex items-center space-x-2">
@@ -340,7 +422,6 @@ const BookModal: React.FC<BookModalProps> = ({
               disabled={isLoading}
               className="mr-auto w-full sm:w-auto"
             >
-              {" "}
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (

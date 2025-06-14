@@ -124,7 +124,7 @@ const ContactPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-16">
+    <div className="container mx-auto px-4 py-16 pt-0">
       <div className="text-center mb-12">
         <div className="inline-flex items-center gap-3 bg-gradient-to-r from-background/10 to-accent-3/10 backdrop-blur-sm px-4 py-2 rounded-full border border-accent-3/20 mb-6">
           <div className="flex items-center justify-center w-8 h-8 bg-accent-2/20 rounded-lg backdrop-blur-sm border border-accent-2/30">

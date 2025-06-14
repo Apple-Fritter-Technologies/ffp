@@ -57,9 +57,11 @@ export const heroSlides = [
 ];
 
 export const navLinks = [
-  { name: "Books", href: "/books" },
-  { name: "Podcasts", href: "/podcasts" },
   { name: "About", href: "/about" },
+  { name: "Support", href: "/support" },
+  { name: "Books", href: "/books" },
+  { name: "Shop", href: "/shop" },
+  { name: "Podcasts", href: "/podcasts" },
   { name: "Contact", href: "/contact" },
   { name: "Blog", href: "https://bryandfurlong.substack.com/" },
 ];
@@ -175,26 +177,38 @@ export const faqList = [
 export const quickActions = [
   {
     label: "Add New Book",
-    href: "/admin/books/new",
+    href: "/admin/dashboard/books",
     icon: BookOpenIcon,
     color: "bg-blue-500/10 text-blue-500",
   },
   {
     label: "Manage Users",
-    href: "/admin/users",
+    href: "/admin/dashboard/users",
     icon: UsersIcon,
     color: "bg-green-500/10 text-green-500",
   },
   {
     label: "View Orders",
-    href: "/admin/orders",
+    href: "/admin/dashboard/orders",
     icon: ShoppingCartIcon,
     color: "bg-purple-500/10 text-purple-500",
   },
   {
     label: "Messages",
-    href: "/admin/messages",
+    href: "/admin/dashboard/messages",
     icon: MessageCircleIcon,
     color: "bg-orange-500/10 text-orange-500",
+  },
+  {
+    label: "Podcasts",
+    href: "/admin/dashboard/podcasts",
+    icon: Mic,
+    color: "bg-yellow-500/10 text-yellow-500",
+  },
+  {
+    label: "Genres",
+    href: "/admin/dashboard/genres",
+    icon: Bookmark,
+    color: "bg-red-500/10 text-red-500",
   },
 ];

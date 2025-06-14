@@ -11,12 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Pencil,
-  Plus,
+  Eye,
   Search,
   AlertCircle,
   Loader2,
@@ -25,6 +23,7 @@ import {
   Calendar,
   ShoppingBag,
   MessageSquare,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import UserModal from "../../components/user-modal";
@@ -63,8 +62,9 @@ const DashboardUsersPage = () => {
     fetchUsers();
   }, []);
 
-  const handleEdit = (user: User) => {
+  const handleView = (user: User) => {
     setSelectedUser(user);
+    setOpen(true);
   };
 
   const filteredUsers = users?.filter(
@@ -79,7 +79,7 @@ const DashboardUsersPage = () => {
   };
 
   const getRoleBadgeVariant = (role: string) => {
-    return role === "ADMIN" ? "destructive" : "secondary";
+    return role === "admin" ? "destructive" : "secondary";
   };
 
   // Loading state
@@ -134,24 +134,43 @@ const DashboardUsersPage = () => {
             <div>
               <CardTitle>User Management</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Manage user accounts and permissions.
+                View user information and account details. Users are created
+                through the authentication system.
               </p>
             </div>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  onClick={() => {
-                    setSelectedUser(null);
-                  }}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add User
-                </Button>
-              </DialogTrigger>
-            </Dialog>
           </div>
         </CardHeader>
         <CardContent>
+          {/* Clerk Management Info Card */}
+          <Card className="mb-6 border-l-4 border-l-blue-500 bg-blue-50/50">
+            <CardContent className="pt-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-blue-900 mb-2">
+                    User Information & Authentication
+                  </h3>
+                  <p className="text-sm text-blue-800 mb-3">
+                    This interface displays read-only user information. Users
+                    are automatically created when they sign up through the
+                    authentication system. For user management and advanced
+                    settings, visit the Clerk dashboard.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      window.open("https://dashboard.clerk.com/apps", "_blank")
+                    }
+                    className="border-blue-200 text-blue-700 hover:bg-blue-100"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Visit Clerk Dashboard
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="flex items-center space-x-2 mb-4">
             <Search className="w-4 h-4" />
             <Input
@@ -232,12 +251,9 @@ const DashboardUsersPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          handleEdit(user);
-                          setOpen(true);
-                        }}
+                        onClick={() => handleView(user)}
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -254,20 +270,15 @@ const DashboardUsersPage = () => {
 
           {users?.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No users available. Click &quot;Add User&quot; to create your
-              first user.
+              No users available yet. Users will appear here once they sign up
+              through the authentication system.
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* User Modal */}
-      <UserModal
-        open={open}
-        setOpen={setOpen}
-        userData={selectedUser}
-        fetchUsers={fetchUsers}
-      />
+      <UserModal open={open} setOpen={setOpen} userData={selectedUser} />
     </div>
   );
 };

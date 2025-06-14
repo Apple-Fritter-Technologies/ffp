@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
       data: {
         userId,
         totalPrice,
-        status: OrderStatus.PENDING,
+        status: OrderStatus.pending,
         orderItems: {
           create: orderItems.map((item: any) => {
             const book = books.find((b) => b.id === item.bookId);

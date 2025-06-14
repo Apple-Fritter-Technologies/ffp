@@ -11,21 +11,36 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch dashboard data
-    const [
-      totalBooks,
-      totalUsers,
-      totalOrders,
-      unreadMessages,
-      totalGenres,
-      totalPodcasts,
-    ] = await Promise.all([
-      prisma.book.count(),
-      prisma.user.count(),
-      prisma.order.count(),
-      prisma.contact.count({ where: { isRead: false } }),
-      prisma.genre.count(),
-      prisma.podcast.count(),
-    ]);
+    const totalBooks = await prisma.book.count();
+    const totalUsers = await prisma.user.count();
+    const totalOrders = await prisma.order.count();
+    const totalGenres = await prisma.genre.count();
+    const totalPodcasts = await prisma.podcast.count();
+    const unreadMessages = await prisma.contact.count({
+      where: { isRead: false },
+    });
+    const totalRevenue = await prisma.order
+      .aggregate({
+        _sum: { totalPrice: true },
+      })
+      .then((result) => result._sum.totalPrice || 0);
+    const monthlyRevenue = await prisma.order
+      .groupBy({
+        by: ["createdAt"],
+        _sum: { totalPrice: true },
+        orderBy: { createdAt: "asc" },
+        where: {
+          createdAt: {
+            gte: new Date(new Date().setMonth(new Date().getMonth() - 6)), // Last 6 months
+          },
+        },
+      })
+      .then((results) =>
+        results.map((item) => ({
+          month: item.createdAt.toISOString().slice(0, 7), // Format as YYYY-MM
+          revenue: item._sum.totalPrice || 0,
+        }))
+      );
 
     const recentOrders = await prisma.order.findMany({
       orderBy: { createdAt: "desc" },
@@ -40,6 +55,8 @@ export async function GET(req: NextRequest) {
         unreadMessages,
         totalGenres,
         totalPodcasts,
+        totalRevenue,
+        monthlyRevenue,
       },
       { status: 200 }
     );

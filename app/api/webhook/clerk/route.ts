@@ -90,6 +90,43 @@ export async function POST(req: Request) {
           { status: 500 }
         );
       }
+    } else if (event.type === "user.updated") {
+      try {
+        const { id, email_addresses, first_name, last_name } = event.data;
+
+        // Validate required data
+        if (!id) {
+          console.error("Missing user ID in webhook data");
+          return NextResponse.json(
+            { error: "Invalid user data" },
+            { status: 400 }
+          );
+        }
+
+        const email = email_addresses?.[0]?.email_address;
+        const name = [first_name, last_name].filter(Boolean).join(" ") || null;
+
+        await prisma.user.upsert({
+          where: { clerkId: id },
+          update: {
+            email: email || undefined,
+            name: name || undefined,
+          },
+          create: {
+            clerkId: id,
+            email: email || "",
+            name: name || "",
+          },
+        });
+
+        console.log(`User created/updated successfully: ${id}`);
+      } catch (dbError) {
+        console.error("Database operation failed:", dbError);
+        return NextResponse.json(
+          { error: "Failed to create/update user" },
+          { status: 500 }
+        );
+      }
     } else {
       console.log(`Unhandled webhook event type: ${event.type}`);
     }
@@ -102,12 +139,4 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-}
-
-export async function GET() {
-  console.log("Received Clerk webhook GET request");
-  return NextResponse.json(
-    { error: "This endpoint only accepts POST requests" },
-    { status: 405 }
-  );
 }
