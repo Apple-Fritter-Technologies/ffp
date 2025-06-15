@@ -24,12 +24,18 @@ export async function GET(req: NextRequest) {
                   book: true,
                 },
               },
+              shippingAddress: true,
             },
             orderBy: {
               createdAt: "desc",
             },
           },
-          Contact: {
+          contact: {
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+          address: {
             orderBy: {
               createdAt: "desc",
             },
@@ -46,8 +52,13 @@ export async function GET(req: NextRequest) {
       // get all users
       const users = await prisma.user.findMany({
         include: {
-          orders: true,
-          Contact: true,
+          orders: {
+            include: {
+              shippingAddress: true,
+            },
+          },
+          contact: true,
+          address: true,
         },
         orderBy: {
           createdAt: "desc",

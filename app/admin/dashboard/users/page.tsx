@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import UserModal from "../../components/user-modal";
 import { User } from "@/types/interface";
 import { getUsers } from "@/hooks/actions/user-actions";
+import { formatDate } from "@/lib/utils";
 
 const DashboardUsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -72,11 +73,6 @@ const DashboardUsersPage = () => {
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString();
-  };
 
   const getRoleBadgeVariant = (role: string) => {
     return role === "admin" ? "destructive" : "secondary";
@@ -235,7 +231,7 @@ const DashboardUsersPage = () => {
                       <div className="flex items-center space-x-2">
                         <MessageSquare className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {user.Contact?.length || 0}
+                          {user.contact?.length || 0}
                         </span>
                       </div>
                     </TableCell>

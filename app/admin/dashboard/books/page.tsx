@@ -14,12 +14,20 @@ import {
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Plus, Search, AlertCircle, Loader2 } from "lucide-react";
+import {
+  Pencil,
+  Plus,
+  Search,
+  AlertCircle,
+  Loader2,
+  Download,
+  Package,
+} from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import BookModal from "../../components/book-modal";
-import { Book, Genre } from "@/types/interface";
+import { Book, Genre, ProductType } from "@/types/interface";
 import { getBooks } from "@/hooks/actions/book-actions";
 import { getGenres } from "@/hooks/actions/genres-actions";
 
@@ -100,6 +108,34 @@ const DashboardBooksPage = () => {
       book.author?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       book.genre?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Helper function to format file size
+  const formatFileSize = (fileSize?: string | null) => {
+    if (!fileSize) return "N/A";
+    return fileSize;
+  };
+
+  // Helper function to get product type badge
+  const getProductTypeBadge = (productType: ProductType) => {
+    switch (productType) {
+      case ProductType.digital:
+        return (
+          <Badge variant="outline" className="text-blue-600 border-blue-600">
+            <Download className="w-3 h-3 mr-1" />
+            Digital
+          </Badge>
+        );
+      case ProductType.physical:
+        return (
+          <Badge variant="outline" className="text-green-600 border-green-600">
+            <Package className="w-3 h-3 mr-1" />
+            Physical
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">Physical</Badge>;
+    }
+  };
 
   // Loading state
   if (isLoading) {
@@ -211,7 +247,9 @@ const DashboardBooksPage = () => {
                   <TableHead>Title</TableHead>
                   <TableHead>Author</TableHead>
                   <TableHead>Genre</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Price</TableHead>
+                  <TableHead>Digital Info</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -239,9 +277,45 @@ const DashboardBooksPage = () => {
                     <TableCell>
                       <Badge variant="secondary">{book.genre?.name}</Badge>
                     </TableCell>
+                    <TableCell>
+                      {getProductTypeBadge(book.productType)}
+                    </TableCell>
                     <TableCell>${book.price}</TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
+                      {book.productType === ProductType.digital ? (
+                        <div className="text-sm space-y-1">
+                          {book.format && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-muted-foreground">
+                                Format:
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {book.format}
+                              </Badge>
+                            </div>
+                          )}
+                          {book.fileSize && (
+                            <div className="text-muted-foreground">
+                              Size: {formatFileSize(book.fileSize)}
+                            </div>
+                          )}
+                          {book.downloadUrl && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs text-green-600"
+                            >
+                              Download Ready
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">
+                          Physical product
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
                         {book.isAvailable && (
                           <Badge variant="default">Available</Badge>
                         )}

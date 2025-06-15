@@ -51,7 +51,7 @@ function MobileNavLink({
   return (
     <Link
       href={href}
-      className={`text-background font-medium hover:text-accent-1 px-4 py-3 rounded-md hover:bg-accent-1/10 block ${className}`}
+      className={`text-background font-medium hover:text-accent-1 px-4 py-3 rounded-lg hover:bg-accent-1/10 block ${className}`}
       onClick={onClick}
     >
       {children}
@@ -130,7 +130,7 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8 text-background transition-all">
+          <nav className="hidden lg:flex space-x-8 text-background transition-all">
             {navLinks.map((link) => (
               <NavLink key={link.name} href={link.href}>
                 {link.name}
@@ -139,7 +139,7 @@ const Navbar = () => {
           </nav>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden lg:flex items-center space-x-6">
             <Link
               href="/search"
               className="text-accent-2 hover:text-accent-1 transition-colors"
@@ -164,7 +164,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Actions */}
-          <div className="flex md:hidden items-center gap-6">
+          <div className="flex lg:hidden items-center gap-6">
             <Link
               href="/search"
               className="text-accent-2 hover:text-accent-1 transition-colors"
@@ -214,7 +214,7 @@ const Navbar = () => {
 
         {/* Mobile Navigation Overlay */}
         <div
-          className={`fixed top-[95px] inset-0 z-10 bg-black/60 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
+          className={`fixed top-[95px] inset-0 z-10 bg-black/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
             isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
           onClick={() => setIsOpen(false)}
@@ -222,7 +222,7 @@ const Navbar = () => {
 
         {/* Mobile Navigation Menu */}
         <div
-          className={`absolute top-full left-4 right-4 bg-foreground backdrop-blur-xl rounded-2xl p-4 shadow-lg z-40 transition-all duration-300 ease-in-out transform md:hidden
+          className={`absolute top-full left-4 right-4 bg-foreground backdrop-blur-xl rounded-2xl p-4 shadow-lg z-40 transition-all duration-300 ease-in-out transform lg:hidden
             ${
               isOpen
                 ? "translate-y-2 opacity-100"

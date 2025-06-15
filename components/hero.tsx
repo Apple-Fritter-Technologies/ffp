@@ -11,26 +11,30 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { useEffect, useState } from "react";
-import { heroSlides } from "@/lib/data";
+import { Book } from "@/types/interface";
 import GridPattern from "./gird-pattern";
 
-export default function Hero() {
-  const [api, setApi] = useState<CarouselApi>();
+interface HeroProps {
+  bundleBooks: Book[];
+}
 
+export default function Hero({ bundleBooks }: HeroProps) {
+  const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
 
-  const slides = heroSlides;
+  // Use bundleBooks if available, otherwise empty array
+  const slides = bundleBooks || [];
 
   // Auto-advance slides
   useEffect(() => {
-    if (!api) return;
+    if (!api || slides.length === 0) return;
 
     const interval = setInterval(() => {
       api.scrollNext();
     }, 6000);
 
     return () => clearInterval(interval);
-  }, [api]);
+  }, [api, slides.length]);
 
   // Track current slide
   useEffect(() => {
@@ -46,6 +50,25 @@ export default function Hero() {
     };
   }, [api]);
 
+  // Don't render if no bundle books
+  if (!slides.length) {
+    return (
+      <section className="py-12">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-title font-semibold mb-4">
+              Welcome to FFP Books
+            </h2>
+            <div className="w-24 h-1 bg-accent-2 mx-auto mb-8" />
+            <p className="text-base text-muted-foreground">
+              Discover amazing book bundles and collections
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section>
       <Carousel
@@ -53,47 +76,52 @@ export default function Hero() {
         opts={{
           align: "start",
           loop: true,
-          dragFree: false, // Makes swiping feel more natural
-          containScroll: false, // Allows for edge-to-edge swiping
+          dragFree: false,
+          containScroll: false,
         }}
       >
         <CarouselContent className="cursor-grab active:cursor-grabbing">
-          {slides.map((slide) => (
-            <CarouselItem key={slide.id} className="h-full">
-              {/* Slide content */}
-
+          {slides.map((book) => (
+            <CarouselItem key={book.id} className="h-full">
               <div className="flex flex-col-reverse items-center lg:flex-row gap-8 h-full py-12 px-4 md:px-6 container mx-auto">
                 <div className="text-left z-10 flex-1 lg:min-h-[500px] flex justify-between flex-col items-start">
                   <div>
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-title font-semibold">
-                      {slide.title}
+                      {book.title}
                     </h2>
                     <div className="w-24 h-1 bg-accent-2 my-4" />
-                    <p className="text-base mb-8 text-muted-foreground">
-                      {slide.description}
+                    <p className="text-base mb-4 text-muted-foreground">
+                      {book.description || "Discover this amazing book bundle"}
                     </p>
+                    {book.author && (
+                      <p className="text-sm text-muted-foreground mb-4">
+                        by {book.author}
+                      </p>
+                    )}
+                    {/* <p className="text-2xl font-bold text-accent-3 mb-8">
+                      ${book.price}
+                    </p> */}
                   </div>
                   <Link
-                    href={slide.link}
+                    href={`/books/${book.id}`}
                     className="inline-flex items-center px-6 py-3 bg-accent-3 hover:bg-foreground/90 text-white font-bold rounded-md transition-colors"
                   >
-                    {slide.buttonText}
+                    {book.buttonText || "Buy Now"}
                     <ChevronRight className="ml-2" />
                   </Link>
                 </div>
 
-                {/* Slide image */}
-                <div className="relative">
+                {/* Book image with grid pattern */}
+                <div className="relative flex-1 w-full min-h-[300px] lg:min-h-[500px] overflow-hidden">
                   <GridPattern color="black" />
-
                   <Image
-                    src={slide.image}
-                    alt={slide.title}
-                    height={800}
-                    width={1200}
-                    className="object-contain w-full h-full flex-1 lg:min-w-xl max-h-96 lg:max-h-[500px] relative z-10"
+                    src={book.imageUrl || "/placeholder-book.jpg"}
+                    alt={book.title}
+                    fill
+                    className="object-contain relative z-10"
                     quality={100}
-                    priority
+                    priority={current === slides.indexOf(book)}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
                 </div>
               </div>
@@ -103,18 +131,20 @@ export default function Hero() {
       </Carousel>
 
       {/* Slide navigation dots */}
-      <div className="flex justify-center gap-2">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => api?.scrollTo(index)}
-            className={`w-3 h-3 rounded-full transition-colors ${
-              index === current ? "bg-accent-2" : "bg-accent-2/20"
-            } hover:bg-accent-2/60`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
+      {slides.length > 1 && (
+        <div className="flex justify-center gap-2 mt-6">
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => api?.scrollTo(index)}
+              className={`w-3 h-3 rounded-full transition-colors ${
+                index === current ? "bg-accent-2" : "bg-accent-2/20"
+              } hover:bg-accent-2/60`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

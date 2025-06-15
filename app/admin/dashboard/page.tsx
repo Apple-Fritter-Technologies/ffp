@@ -18,6 +18,8 @@ import {
   ArrowUpRightIcon,
   RefreshCwIcon,
   ClockIcon,
+  DollarSignIcon,
+  TrendingUpIcon,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDashboardStats } from "@/hooks/actions/dashboard-actions";
@@ -40,43 +42,50 @@ export default function DashboardPage() {
 
   const stats = [
     {
+      title: "Total Revenue",
+      value: data?.totalRevenue ? `$${data.totalRevenue}` : 0,
+      description: "Total earnings",
+      icon: <DollarSignIcon size={20} />,
+      color: "bg-emerald-500/10 text-emerald-500",
+    },
+    {
       title: "Total Books",
-      value: data?.totalBooks,
+      value: data?.totalBooks || 0,
       description: "Books in your library",
       icon: <BookOpenIcon size={20} />,
       color: "bg-blue-500/10 text-blue-500",
     },
     {
       title: "Total Users",
-      value: data?.totalUsers,
+      value: data?.totalUsers || 0,
       description: "Registered users",
       icon: <UsersIcon size={20} />,
       color: "bg-green-500/10 text-green-500",
     },
     {
       title: "Total Orders",
-      value: data?.totalOrders,
+      value: data?.totalOrders || 0,
       description: "Orders placed",
       icon: <ShoppingCartIcon size={20} />,
       color: "bg-purple-500/10 text-purple-500",
     },
     {
       title: "Unread Messages",
-      value: data?.unreadMessages,
+      value: data?.unreadMessages || 0,
       description: "New contact messages",
       icon: <MessageCircleIcon size={20} />,
       color: "bg-orange-500/10 text-orange-500",
     },
     {
       title: "Total Genres",
-      value: data?.totalGenres,
+      value: data?.totalGenres || 0,
       description: "Book categories",
       icon: <FolderIcon size={20} />,
       color: "bg-yellow-500/10 text-yellow-500",
     },
     {
       title: "Total Podcasts",
-      value: data?.totalPodcasts,
+      value: data?.totalPodcasts || 0,
       description: "Audio content",
       icon: <MicIcon size={20} />,
       color: "bg-red-500/10 text-red-500",
@@ -174,7 +183,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
           <motion.div
             key={stat.title}
@@ -209,6 +218,49 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* Monthly Revenue Chart */}
+      {data?.monthlyRevenue && data.monthlyRevenue.length > 0 && (
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeIn}
+          transition={{ delay: 0.7 }}
+        >
+          <Card className="shadow-md shadow-muted/10 border-none hover:shadow-lg transition-shadow duration-300">
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <TrendingUpIcon size={20} />
+                Revenue Trend
+              </CardTitle>
+              <CardDescription>
+                Monthly revenue for the last 6 months
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                {data.monthlyRevenue.map((item) => (
+                  <div
+                    key={item.month}
+                    className="text-center p-3 rounded-lg border border-muted bg-card/50"
+                  >
+                    <div className="text-xs text-muted-foreground mb-1">
+                      {new Date(item.month + "-01").toLocaleDateString(
+                        "en-US",
+                        {
+                          month: "short",
+                          year: "2-digit",
+                        }
+                      )}
+                    </div>
+                    <div className="text-lg font-semibold">${item.revenue}</div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Recent Orders */}
       {data?.recentOrders && data.recentOrders.length > 0 && (
         <motion.div
@@ -239,7 +291,9 @@ export default function DashboardPage() {
                       </span>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {new Date(order.createdAt).toLocaleDateString()}
+                      {order.createdAt
+                        ? new Date(order.createdAt).toLocaleDateString()
+                        : "N/A"}
                     </span>
                   </div>
                 ))}

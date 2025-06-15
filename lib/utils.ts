@@ -21,7 +21,7 @@ export const getYouTubeThumbnail = (videoUrl: string) => {
   return videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null;
 };
 
-export const formatTimeAgo = (dateString: string | undefined) => {
+export const formatTimeAgo = (dateString: Date | undefined) => {
   if (!dateString) return "Unknown"; // Handle undefined case
 
   const now = new Date();
@@ -33,4 +33,9 @@ export const formatTimeAgo = (dateString: string | undefined) => {
   if (diffDays < 7) return `${diffDays} days ago`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
   return `${Math.floor(diffDays / 30)} months ago`;
+};
+
+export const formatDate = (dateString: Date | undefined) => {
+  if (!dateString) return "N/A";
+  return new Date(dateString).toLocaleDateString();
 };

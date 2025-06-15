@@ -1,21 +1,33 @@
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
 import { ChevronRight, LibraryBig } from "lucide-react";
 import GridPattern from "./gird-pattern";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { GenresData } from "@/types/interface";
 
-const Categories = () => {
-  const categories = [
-    { name: "Literary Fiction", count: "124" },
-    { name: "Science Fiction", count: "89" },
-    { name: "Mystery", count: "156" },
-    { name: "Historical", count: "78" },
-    { name: "Biography", count: "45" },
-    { name: "Poetry", count: "67" },
-  ];
+interface CategoriesProps {
+  genres: GenresData;
+}
+
+const Categories = ({ genres }: CategoriesProps) => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const maxCategories = 5;
-  const displayCategories = categories.slice(0, maxCategories);
-  const showViewAll = categories.length > maxCategories;
+  const displayCategories = genres.items.slice(0, maxCategories);
+  const showViewAll = genres.totalCount > maxCategories;
+
+  const handleViewAllClick = () => {
+    setIsDialogOpen(true);
+  };
+
+  const getGenreUrl = (genreId: string) => {
+    return `/books?genres=${encodeURIComponent(genreId)}`;
+  };
 
   return (
     <section className="p-6 py-12 bg-foreground/90 rounded-3xl relative">
@@ -35,22 +47,20 @@ const Categories = () => {
 
         {/* Categories Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-          {displayCategories.map((category, index) => (
+          {displayCategories.map((genre) => (
             <Link
-              key={index}
-              href={`/category/${category.name
-                .toLowerCase()
-                .replace(/\s+/g, "-")}`}
+              key={genre.id}
+              href={getGenreUrl(genre.id)}
               className="group block"
             >
               <div className="bg-background/90 backdrop-blur-md rounded-2xl border border-accent-3/20 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:bg-background/90 min-h-[140px]">
                 <div className="p-6 h-full flex flex-col justify-between">
                   <div>
                     <h4 className="font-semibold text-xl mb-2 group-hover:text-accent-2 transition-colors">
-                      {category.name}
+                      {genre.name}
                     </h4>
                     <p className="text-accent-3 font-light text-sm mb-4">
-                      {category.count} books available
+                      {genre.booksCount} books available
                     </p>
                   </div>
 
@@ -69,7 +79,10 @@ const Categories = () => {
 
           {/* View All Categories Card */}
           {showViewAll && (
-            <Link href="/categories" className="group block">
+            <div
+              className="group block cursor-pointer"
+              onClick={handleViewAllClick}
+            >
               <div className="bg-gradient-to-br from-accent-2/10 to-accent-3/10 backdrop-blur-md rounded-2xl border border-accent-2/40 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] min-h-[140px]">
                 <div className="p-6 h-full flex flex-col justify-center items-center text-center">
                   <div className="w-12 h-12 bg-accent-2/30 rounded-full border border-accent-2/50 flex items-center justify-center mb-3 group-hover:bg-accent-2 transition-all duration-300">
@@ -79,13 +92,53 @@ const Categories = () => {
                     View All
                   </h4>
                   <p className="text-accent-3 font-light text-sm group-hover:text-accent-1 transition-colors">
-                    {categories.length - maxCategories}+ more categories
+                    {genres.totalCount - maxCategories}+ more categories
                   </p>
                 </div>
               </div>
-            </Link>
+            </div>
           )}
         </div>
+
+        {/* Dialog for All Categories */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold mb-4">
+                All Categories ({genres.totalCount})
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {genres.items.map((genre) => (
+                <Link
+                  key={genre.id}
+                  href={getGenreUrl(genre.id)}
+                  className="group block"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  <div className="bg-background rounded-xl border border-border transition-all duration-300 hover:shadow-md hover:scale-[1.02] hover:border-accent-2">
+                    <div className="p-4">
+                      <h4 className="font-semibold text-lg mb-2 group-hover:text-accent-2 transition-colors">
+                        {genre.name}
+                      </h4>
+                      <p className="text-muted-foreground text-sm mb-3">
+                        {genre.booksCount} books available
+                      </p>
+                      <div className="flex items-center justify-between pt-2 border-t border-border">
+                        <span className="text-muted-foreground text-xs font-medium">
+                          Explore
+                        </span>
+                        <div className="w-6 h-6 bg-accent-2/20 rounded-full flex items-center justify-center group-hover:bg-accent-2 transition-all duration-300">
+                          <ChevronRight className="w-3 h-3 text-accent-2 group-hover:text-white transition-colors" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </section>
   );

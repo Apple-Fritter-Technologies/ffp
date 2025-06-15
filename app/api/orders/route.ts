@@ -2,6 +2,7 @@ import prisma from "@/hooks/prisma";
 import { verifySession } from "@/lib/server-utils";
 import { OrderStatus } from "@/types/interface";
 import { NextRequest, NextResponse } from "next/server";
+import { clerkClient } from "@clerk/nextjs/server";
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
     const id = searchParams.get("id");
     const userId = searchParams.get("userId");
     const status = searchParams.get("status") as OrderStatus | null;
+    const hasPhysicalItems = searchParams.get("hasPhysicalItems");
 
     if (id) {
       // Get order by id
@@ -28,6 +30,7 @@ export async function GET(req: NextRequest) {
               email: true,
             },
           },
+          shippingAddress: true,
           orderItems: {
             include: {
               book: {
@@ -36,10 +39,12 @@ export async function GET(req: NextRequest) {
                   title: true,
                   author: true,
                   imageUrl: true,
+                  productType: true,
                 },
               },
             },
           },
+          payment: true,
         },
       });
 
@@ -62,13 +67,17 @@ export async function GET(req: NextRequest) {
 
       // If not admin, only show user's own orders
       if (auth.user?.metadata?.role !== "admin") {
-        whereClause.userId = auth.user?.id;
+        whereClause.userId = auth.user?.sub;
       } else if (userId) {
         whereClause.userId = userId;
       }
 
       if (status) {
         whereClause.status = status;
+      }
+
+      if (hasPhysicalItems !== null) {
+        whereClause.hasPhysicalItems = hasPhysicalItems === "true";
       }
 
       const orders = await prisma.order.findMany({
@@ -81,6 +90,7 @@ export async function GET(req: NextRequest) {
               email: true,
             },
           },
+          shippingAddress: true,
           orderItems: {
             include: {
               book: {
@@ -89,10 +99,12 @@ export async function GET(req: NextRequest) {
                   title: true,
                   author: true,
                   imageUrl: true,
+                  productType: true,
                 },
               },
             },
           },
+          payment: true,
         },
         orderBy: {
           createdAt: "desc",
@@ -104,101 +116,6 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch orders" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const auth = await verifySession(req);
-
-    if (!auth.authorized) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const orderData = await req.json();
-    const { userId, orderItems, totalPrice } = orderData;
-
-    // Validate required fields
-    if (
-      !userId ||
-      !orderItems ||
-      !Array.isArray(orderItems) ||
-      orderItems.length === 0 ||
-      !totalPrice
-    ) {
-      return NextResponse.json(
-        { error: "User ID, order items, and total price are required" },
-        { status: 400 }
-      );
-    }
-
-    // Check if user can create order for this userId
-    if (auth.user?.metadata?.role !== "admin" && userId !== auth.user?.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Validate that all books exist and are available
-    const bookIds = orderItems.map((item: any) => item.bookId);
-    const books = await prisma.book.findMany({
-      where: {
-        id: { in: bookIds },
-        isAvailable: true,
-      },
-    });
-
-    if (books.length !== bookIds.length) {
-      return NextResponse.json(
-        { error: "Some books are not available or don't exist" },
-        { status: 400 }
-      );
-    }
-
-    // Create order with order items
-    const newOrder = await prisma.order.create({
-      data: {
-        userId,
-        totalPrice,
-        status: OrderStatus.pending,
-        orderItems: {
-          create: orderItems.map((item: any) => {
-            const book = books.find((b) => b.id === item.bookId);
-            return {
-              bookId: item.bookId,
-              quantity: item.quantity || 1,
-              price: book?.price || 0,
-            };
-          }),
-        },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        orderItems: {
-          include: {
-            book: {
-              select: {
-                id: true,
-                title: true,
-                author: true,
-                imageUrl: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return NextResponse.json(newOrder, { status: 201 });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to create order" },
       { status: 500 }
     );
   }
@@ -223,7 +140,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const orderData = await req.json();
-    const { status } = orderData;
+    const { status, shippingAddressId } = orderData;
 
     if (!status || !Object.values(OrderStatus).includes(status)) {
       return NextResponse.json(
@@ -241,9 +158,31 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
+    // Prepare update data
+    const updateData: any = { status };
+
+    // If updating shipping address and order has physical items
+    if (shippingAddressId && existingOrder.hasPhysicalItems) {
+      const address = await prisma.address.findFirst({
+        where: {
+          id: shippingAddressId,
+          userId: existingOrder.userId,
+        },
+      });
+
+      if (!address) {
+        return NextResponse.json(
+          { error: "Invalid shipping address" },
+          { status: 400 }
+        );
+      }
+
+      updateData.shippingAddressId = shippingAddressId;
+    }
+
     const updatedOrder = await prisma.order.update({
       where: { id },
-      data: { status },
+      data: updateData,
       include: {
         user: {
           select: {
@@ -252,6 +191,7 @@ export async function PUT(req: NextRequest) {
             email: true,
           },
         },
+        shippingAddress: true,
         orderItems: {
           include: {
             book: {
@@ -260,10 +200,13 @@ export async function PUT(req: NextRequest) {
                 title: true,
                 author: true,
                 imageUrl: true,
+                productType: true,
+                downloadUrl: true,
               },
             },
           },
         },
+        payment: true,
       },
     });
 
@@ -276,45 +219,255 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const auth = await verifySession(req);
 
-    if (!auth.authorized || auth.user?.metadata?.role !== "admin") {
+    if (!auth.authorized) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-
-    if (!id) {
+    // Add validation for user ID
+    if (!auth.user?.sub) {
       return NextResponse.json(
-        { error: "Order ID is required" },
+        { error: "User ID not found in session" },
         { status: 400 }
       );
     }
 
-    // Check if order exists
-    const existingOrder = await prisma.order.findUnique({
-      where: { id },
-    });
+    const orderData = await req.json();
+    const { items, totalPrice, hasPhysicalItems, shippingAddress } = orderData;
 
-    if (!existingOrder) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    // Validate required fields
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json(
+        { error: "Order items are required" },
+        { status: 400 }
+      );
     }
 
-    // Delete order (orderItems will be deleted due to cascade)
-    await prisma.order.delete({
-      where: { id },
+    if (!totalPrice || totalPrice <= 0) {
+      return NextResponse.json(
+        { error: "Valid total price is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate items exist and calculate total
+    let calculatedTotal = 0;
+    for (const item of items) {
+      const book = await prisma.book.findUnique({
+        where: { id: item.bookId },
+        select: { id: true, price: true, isAvailable: true, productType: true },
+      });
+
+      if (!book) {
+        return NextResponse.json(
+          { error: `Book with ID ${item.bookId} not found` },
+          { status: 400 }
+        );
+      }
+
+      if (!book.isAvailable) {
+        return NextResponse.json(
+          { error: `Book with ID ${item.bookId} is not available` },
+          { status: 400 }
+        );
+      }
+
+      calculatedTotal += Number(book.price) * item.quantity;
+    }
+
+    // Verify total price matches
+    if (Math.abs(calculatedTotal - totalPrice) > 0.01) {
+      return NextResponse.json(
+        { error: "Total price mismatch" },
+        { status: 400 }
+      );
+    }
+
+    // Get the user data from Clerk using the clerkClient
+    let clerkUser;
+    try {
+      const client = await clerkClient();
+      clerkUser = await client.users.getUser(auth.user.sub);
+    } catch (clerkError) {
+      console.error("Error fetching user from Clerk:", clerkError);
+      return NextResponse.json(
+        { error: "Failed to fetch user information" },
+        { status: 500 }
+      );
+    }
+
+    // Extract user data from Clerk
+    const userEmail = clerkUser.primaryEmailAddress?.emailAddress || "";
+    const userName =
+      clerkUser.fullName ||
+      `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
+      "";
+
+    console.log("Creating order for user:", {
+      userEmail,
+      userName,
+      clerkId: clerkUser.id,
     });
 
-    return NextResponse.json(
-      { message: "Order deleted successfully" },
-      { status: 200 }
-    );
+    // Check if user exists in database, create if not
+    let user = await prisma.user.findUnique({
+      where: { clerkId: clerkUser.id },
+    });
+
+    if (!user) {
+      // Create user if doesn't exist
+      user = await prisma.user.create({
+        data: {
+          clerkId: clerkUser.id,
+          email: userEmail,
+          name: userName,
+          role: "user",
+        },
+      });
+      console.log("Created new user:", user);
+    } else if (
+      !user.email ||
+      user.name === "undefined " ||
+      !user.name?.trim() ||
+      user.email !== userEmail ||
+      user.name !== userName
+    ) {
+      // Update user if data is missing, malformed, or outdated
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          email: userEmail,
+          name: userName,
+        },
+      });
+      console.log("Updated existing user:", user);
+    }
+
+    let shippingAddressId = null;
+
+    // Handle shipping address for physical items
+    if (hasPhysicalItems) {
+      if (!shippingAddress) {
+        return NextResponse.json(
+          { error: "Shipping address is required for physical items" },
+          { status: 400 }
+        );
+      }
+
+      if (shippingAddress.id) {
+        // Use existing address
+        const existingAddress = await prisma.address.findFirst({
+          where: {
+            id: shippingAddress.id,
+            userId: user.id,
+          },
+        });
+
+        if (!existingAddress) {
+          return NextResponse.json(
+            { error: "Invalid shipping address" },
+            { status: 400 }
+          );
+        }
+
+        shippingAddressId = existingAddress.id;
+      } else {
+        // Create new address
+        const { name, street, city, state, zipCode, country, phone } =
+          shippingAddress;
+
+        if (!name || !street || !city || !state || !zipCode) {
+          return NextResponse.json(
+            { error: "All required address fields must be provided" },
+            { status: 400 }
+          );
+        }
+
+        // Check if user has any existing addresses to determine if this should be default
+        const existingAddressCount = await prisma.address.count({
+          where: { userId: user.id },
+        });
+
+        const newAddress = await prisma.address.create({
+          data: {
+            userId: user.id,
+            name,
+            street,
+            city,
+            state,
+            zipCode,
+            country: country || "United States",
+            phone: phone || null,
+            isDefault: existingAddressCount === 0, // Set as default if it's the first address
+          },
+        });
+
+        shippingAddressId = newAddress.id;
+      }
+    }
+
+    // Create order with order items in a transaction
+    const order = await prisma.$transaction(async (tx) => {
+      // Create the order
+      const createdOrder = await tx.order.create({
+        data: {
+          userId: user.id,
+          totalPrice,
+          status: "pending",
+          hasPhysicalItems: hasPhysicalItems || false,
+          shippingAddressId,
+        },
+      });
+
+      // Create order items
+      await tx.orderItem.createMany({
+        data: items.map((item: any) => ({
+          orderId: createdOrder.id,
+          bookId: item.bookId,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      });
+
+      // Return order with all related data
+      return await tx.order.findUnique({
+        where: { id: createdOrder.id },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          shippingAddress: true,
+          orderItems: {
+            include: {
+              book: {
+                select: {
+                  id: true,
+                  title: true,
+                  author: true,
+                  imageUrl: true,
+                  productType: true,
+                },
+              },
+            },
+          },
+          payment: true,
+        },
+      });
+    });
+
+    console.log("Created order:", order);
+    return NextResponse.json(order, { status: 201 });
   } catch (error) {
+    console.error("Create order error:", error);
     return NextResponse.json(
-      { error: "Failed to delete order" },
+      { error: "Failed to create order" },
       { status: 500 }
     );
   }

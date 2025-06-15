@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       take: 5,
     });
+
     return NextResponse.json(
       {
         totalBooks,

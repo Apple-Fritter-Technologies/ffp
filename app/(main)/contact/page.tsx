@@ -99,6 +99,8 @@ const ContactPage = () => {
       const res = await submitContactForm({
         ...formState,
         subject: finalSubject,
+        id: "",
+        isRead: false,
       });
 
       if (res.error) {

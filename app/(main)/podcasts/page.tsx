@@ -150,7 +150,7 @@ const PodcastsPage = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="flex items-center justify-center py-16">
             <div className="flex flex-col items-center space-y-4">
@@ -166,7 +166,7 @@ const PodcastsPage = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="flex items-center justify-center p-4">
         <Card>
           <CardContent className="flex items-center justify-center py-16">
             <div className="flex flex-col items-center space-y-4 text-center">

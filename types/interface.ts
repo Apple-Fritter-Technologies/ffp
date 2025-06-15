@@ -24,8 +24,8 @@ export interface User {
   email: string;
   name?: string | null;
   role: Role;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   orders?: Order[];
   contact?: Contact[];
   address?: Address[];
@@ -42,8 +42,8 @@ export interface Address {
   country: string;
   phone?: string | null;
   isDefault: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   user?: User;
   order?: Order[];
 }
@@ -62,18 +62,20 @@ export interface Book {
   downloadUrl?: string | null;
   fileSize?: string | null;
   format?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   genre?: Genre;
   orderItems?: OrderItem[];
 }
 
+export type BookFormData = Omit<Book, "createdAt" | "updatedAt">;
+
 export interface Genre {
   id: string;
   name: string;
-  displayOrder: number;
-  createdAt: Date;
-  updatedAt: Date;
+  displayOrder?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
   books?: Book[];
 }
 
@@ -94,8 +96,8 @@ export interface Podcast {
   description?: string | null;
   imageUrl?: string | null;
   videoUrl: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Contact {
@@ -106,8 +108,8 @@ export interface Contact {
   isRead: boolean;
   subject?: string | null;
   userId?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   user?: User | null;
 }
 
@@ -115,14 +117,16 @@ export interface Order {
   id: string;
   userId: string;
   totalPrice: number;
+  items: OrderItem[];
   status: OrderStatus;
   hasPhysicalItems: boolean;
   shippingAddressId?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   user?: User;
   shippingAddress?: Address | null;
   orderItems?: OrderItem[];
+  payment: Payment[] | null;
 }
 
 export interface OrderItem {
@@ -138,8 +142,8 @@ export interface OrderItem {
 export interface Newsletter {
   id: string;
   email: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface DashboardData {
@@ -153,4 +157,83 @@ export interface DashboardData {
   topSellingBooks: (Book & { salesCount: number })[];
   monthlyRevenue: { month: string; revenue: number }[];
   totalRevenue: number;
+}
+
+export interface Payment {
+  id: string;
+  orderId: string;
+  amount: number;
+  status: "succeeded" | "failed" | "pending";
+  createdAt?: Date;
+  updatedAt?: Date;
+  order?: Order;
+}
+
+export interface CreateOrderData {
+  items: {
+    bookId: string;
+    quantity: number;
+    price: number;
+  }[];
+  totalPrice: number;
+  hasPhysicalItems: boolean;
+  shippingAddress?: {
+    id?: string;
+    name?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+    phone?: string;
+  } | null;
+}
+
+export interface StoreProduct {
+  id?: string;
+  title: string;
+  description?: string | null;
+  price: number;
+  imageUrl?: string | null;
+  buttonText?: string | null;
+  isAvailable: boolean;
+  productType: ProductType;
+  downloadUrl?: string | null;
+  fileSize?: string | null;
+  format?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface HomeData {
+  featuredBooks: Book[];
+  bundleBooks: Book[];
+  storeProducts: StoreProduct[];
+  genres: GenresData;
+  podcasts: Podcast[];
+}
+
+interface GenreItem {
+  id: string;
+  name: string;
+  displayOrder?: number;
+  booksCount: number;
+}
+
+export interface GenresData {
+  items: GenreItem[];
+  totalCount: number;
+}
+
+export interface AddressFormData {
+  id?: string;
+  userId: string;
+  name: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country?: string;
+  phone?: string;
+  isDefault?: boolean;
 }

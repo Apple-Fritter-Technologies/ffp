@@ -2,7 +2,7 @@
 
 import { getSessionToken } from "@/lib/server-utils";
 import { ApiUrl } from "@/lib/utils";
-import { Book } from "@/types/interface";
+import { BookFormData } from "@/types/interface";
 import axios from "axios";
 
 export const getBooks = async () => {
@@ -34,7 +34,7 @@ export const getBooksById = async (id: string) => {
   }
 };
 
-export const addBook = async (book: Book) => {
+export const addBook = async (book: BookFormData) => {
   const sessionToken = await getSessionToken();
 
   if (!sessionToken) {
@@ -57,7 +57,7 @@ export const addBook = async (book: Book) => {
   }
 };
 
-export const updateBook = async (book: Book) => {
+export const updateBook = async (book: BookFormData) => {
   const sessionToken = await getSessionToken();
 
   if (!sessionToken) {
@@ -100,5 +100,19 @@ export const deleteBook = async (id: string) => {
       };
     }
     return { error: "Failed to delete book" };
+  }
+};
+
+export const getBooksByGenre = async (genreId: string) => {
+  try {
+    const res = await axios.get(`${ApiUrl}/api/books?genreId=${genreId}`);
+    return res.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      return {
+        error: error.response?.data?.error || "Failed to fetch books by genre",
+      };
+    }
+    return { error: "Failed to fetch books by genre" };
   }
 };

@@ -18,6 +18,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { User } from "@/types/interface";
+import { formatDate } from "@/lib/utils";
 
 interface UserModalProps {
   open: boolean;
@@ -33,11 +34,6 @@ const UserModal: React.FC<UserModalProps> = ({ open, setOpen, userData }) => {
 
   const handleClose = () => {
     setOpen(false);
-  };
-
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString();
   };
 
   const getRoleBadgeVariant = (role: string) => {

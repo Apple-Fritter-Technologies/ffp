@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import PodcastModal from "../../components/podcast-modal";
 import { Podcast } from "@/types/interface";
 import { getPodcasts } from "@/hooks/actions/podcast-actions";
+import { formatDate } from "@/lib/utils";
 
 const DashboardPodcastsPage = () => {
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
@@ -70,12 +71,10 @@ const DashboardPodcastsPage = () => {
     podcast.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const truncateText = (text: string | undefined, maxLength: number = 50) => {
+  const truncateText = (
+    text: string | null | undefined,
+    maxLength: number = 50
+  ) => {
     if (!text) return "No description";
     return text.length > maxLength
       ? `${text.substring(0, maxLength)}...`

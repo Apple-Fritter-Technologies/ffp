@@ -47,7 +47,18 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Fetch genres (at most 5) with total count and books count
+    // Fetch store products (at most 4)
+    const storeProducts = await prisma.storeProduct.findMany({
+      where: {
+        isAvailable: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 4,
+    });
+
+    // Fetch all genres with total count and books count
     const genres = await prisma.genre.findMany({
       include: {
         _count: {
@@ -63,7 +74,6 @@ export async function GET(req: NextRequest) {
       orderBy: {
         displayOrder: "asc",
       },
-      take: 5,
     });
 
     // Get total genres count
@@ -88,6 +98,10 @@ export async function GET(req: NextRequest) {
         imageUrl: book.imageUrl,
         buttonText: book.buttonText,
         genre: book.genre,
+        productType: book.productType,
+        downloadUrl: book.downloadUrl,
+        fileSize: book.fileSize,
+        format: book.format,
         createdAt: book.createdAt,
       })),
       bundleBooks: bundleBooks.map((book) => ({
@@ -99,7 +113,24 @@ export async function GET(req: NextRequest) {
         imageUrl: book.imageUrl,
         buttonText: book.buttonText,
         genre: book.genre,
+        productType: book.productType,
+        downloadUrl: book.downloadUrl,
+        fileSize: book.fileSize,
+        format: book.format,
         createdAt: book.createdAt,
+      })),
+      storeProducts: storeProducts.map((product) => ({
+        id: product.id,
+        title: product.title,
+        description: product.description,
+        price: product.price.toString(),
+        imageUrl: product.imageUrl,
+        buttonText: product.buttonText,
+        productType: product.productType,
+        downloadUrl: product.downloadUrl,
+        fileSize: product.fileSize,
+        format: product.format,
+        createdAt: product.createdAt,
       })),
       genres: {
         items: genres.map((genre) => ({

@@ -2,7 +2,7 @@ import React from "react";
 
 const GridPattern = ({ color = "white" }) => {
   return (
-    <div className="absolute inset-0 opacity-5">
+    <div className="absolute inset-0 opacity-10 sm:opacity-5">
       <div
         className="w-full h-full"
         style={{
@@ -10,7 +10,7 @@ const GridPattern = ({ color = "white" }) => {
                 linear-gradient(${color} 1px, transparent 1px),
                 linear-gradient(90deg, ${color} 1px, transparent 1px)
               `,
-          backgroundSize: "40px 40px",
+          backgroundSize: "30px 30px",
           maskImage:
             "radial-gradient(ellipse at center, black 60%, transparent 100%)",
           WebkitMaskImage:

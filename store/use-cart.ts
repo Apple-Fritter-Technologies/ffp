@@ -11,6 +11,10 @@ interface CartState {
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   getItem: (id: string) => CartItem | undefined;
+  hasPhysicalItems: () => boolean;
+  hasDigitalItems: () => boolean;
+  getPhysicalItems: () => CartItem[];
+  getDigitalItems: () => CartItem[];
 }
 
 export const useCart = create<CartState>()(
@@ -32,7 +36,18 @@ export const useCart = create<CartState>()(
           }));
         } else {
           set((state) => ({
-            items: [...state.items, { ...item, quantity: 1 }],
+            items: [
+              ...state.items,
+              {
+                ...item,
+                quantity: 1,
+                // Ensure all CartItem properties are included
+                image: item.image || undefined,
+                author: item.author || undefined,
+                description: item.description || undefined,
+                productType: item.productType || "physical",
+              },
+            ],
           }));
         }
 
@@ -106,10 +121,41 @@ export const useCart = create<CartState>()(
       getItem: (id) => {
         return get().items.find((item) => item.id === id);
       },
+
+      hasPhysicalItems: () => {
+        return get().items.some((item) => item.productType === "physical");
+      },
+
+      hasDigitalItems: () => {
+        return get().items.some((item) => item.productType === "digital");
+      },
+
+      getPhysicalItems: () => {
+        return get().items.filter((item) => item.productType === "physical");
+      },
+
+      getDigitalItems: () => {
+        return get().items.filter((item) => item.productType === "digital");
+      },
     }),
     {
       name: "cart-storage",
       partialize: (state) => ({ items: state.items }),
+      // Recompute totals on hydration
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          const totalItems = state.items.reduce(
+            (sum, item) => sum + item.quantity,
+            0
+          );
+          const totalPrice = state.items.reduce(
+            (sum, item) => sum + item.price * item.quantity,
+            0
+          );
+          state.totalItems = totalItems;
+          state.totalPrice = totalPrice;
+        }
+      },
     }
   )
 );

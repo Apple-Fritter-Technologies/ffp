@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
+    const genreId = searchParams.get("genreId");
 
     if (id) {
       // get book by id
@@ -21,6 +22,21 @@ export async function GET(req: NextRequest) {
       }
 
       return NextResponse.json(book, { status: 200 });
+    } else if (genreId) {
+      // get books by genre
+      const books = await prisma.book.findMany({
+        where: { genreId },
+        include: {
+          genre: true,
+        },
+      });
+      if (books.length === 0) {
+        return NextResponse.json(
+          { error: "No books found for this genre" },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json(books, { status: 200 });
     } else {
       // get all books
       const books = await prisma.book.findMany({
@@ -56,6 +72,10 @@ export async function POST(req: NextRequest) {
       buttonText,
       isAvailable,
       isFeatured,
+      productType,
+      downloadUrl,
+      fileSize,
+      format,
     } = bookData;
 
     if (!title || !price || !genreId) {
@@ -74,6 +94,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Genre not found" }, { status: 404 });
     }
 
+    // Validate digital product fields
+    if (productType === "digital") {
+      if (!downloadUrl) {
+        return NextResponse.json(
+          { error: "Download URL is required for digital products" },
+          { status: 400 }
+        );
+      }
+    }
+
     const newBook = await prisma.book.create({
       data: {
         title,
@@ -85,6 +115,10 @@ export async function POST(req: NextRequest) {
         buttonText: buttonText || "Buy Now",
         isAvailable: isAvailable ?? true,
         isFeatured: isFeatured ?? false,
+        productType: productType || "physical",
+        downloadUrl: downloadUrl || null,
+        fileSize: fileSize || null,
+        format: format || null,
       },
       include: {
         genre: true,
@@ -130,6 +164,10 @@ export async function PUT(req: NextRequest) {
       buttonText,
       isAvailable,
       isFeatured,
+      productType,
+      downloadUrl,
+      fileSize,
+      format,
     } = bookData;
 
     if (!title || !price || !genreId) {
@@ -157,6 +195,16 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Genre not found" }, { status: 404 });
     }
 
+    // Validate digital product fields
+    if (productType === "digital") {
+      if (!downloadUrl) {
+        return NextResponse.json(
+          { error: "Download URL is required for digital products" },
+          { status: 400 }
+        );
+      }
+    }
+
     const updatedBook = await prisma.book.update({
       where: { id: bookId },
       data: {
@@ -169,6 +217,10 @@ export async function PUT(req: NextRequest) {
         buttonText: buttonText || "Buy Now",
         isAvailable: isAvailable ?? true,
         isFeatured: isFeatured ?? false,
+        productType: productType || "physical",
+        downloadUrl: downloadUrl || null,
+        fileSize: fileSize || null,
+        format: format || null,
       },
       include: {
         genre: true,
@@ -197,7 +249,7 @@ export async function DELETE(req: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { error: "Product ID is required" },
+        { error: "Book ID is required" },
         { status: 400 }
       );
     }

@@ -23,7 +23,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Book, Genre } from "@/types/interface";
+import { Book, BookFormData, Genre, ProductType } from "@/types/interface";
 import { addBook, deleteBook, updateBook } from "@/hooks/actions/book-actions";
 
 interface BookModalProps {
@@ -44,9 +44,9 @@ const BookModal: React.FC<BookModalProps> = ({
   onSuccess,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<Book>({
+  const [formData, setFormData] = useState<BookFormData>({
     id: book?.id || "",
-    genre: book?.genre || { id: "", name: "" },
+    genre: book?.genre || undefined,
     title: book?.title || "",
     description: book?.description || "",
     price: book?.price || 0,
@@ -56,7 +56,7 @@ const BookModal: React.FC<BookModalProps> = ({
     buttonText: book?.buttonText || "Buy Now",
     isAvailable: book?.isAvailable ?? true,
     isFeatured: book?.isFeatured ?? false,
-    productType: book?.productType || "physical",
+    productType: (book?.productType || "physical") as ProductType,
     downloadUrl: book?.downloadUrl || "",
     fileSize: book?.fileSize || "",
     format: book?.format || "",
@@ -69,7 +69,7 @@ const BookModal: React.FC<BookModalProps> = ({
     if (isOpen) {
       setFormData({
         id: book?.id || "",
-        genre: book?.genre || { id: "", name: "" },
+        genre: book?.genre || undefined,
         title: book?.title || "",
         description: book?.description || "",
         price: book?.price || 0,
@@ -79,7 +79,7 @@ const BookModal: React.FC<BookModalProps> = ({
         buttonText: book?.buttonText || "Buy Now",
         isAvailable: book?.isAvailable ?? true,
         isFeatured: book?.isFeatured ?? false,
-        productType: book?.productType || "physical",
+        productType: (book?.productType || "physical") as ProductType,
         downloadUrl: book?.downloadUrl || "",
         fileSize: book?.fileSize || "",
         format: book?.format || "",
@@ -231,7 +231,7 @@ const BookModal: React.FC<BookModalProps> = ({
               <Label htmlFor="author">Author</Label>
               <Input
                 id="author"
-                value={formData.author}
+                value={formData.author || ""}
                 onChange={(e) =>
                   setFormData({ ...formData, author: e.target.value })
                 }
@@ -245,7 +245,7 @@ const BookModal: React.FC<BookModalProps> = ({
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              value={formData.description}
+              value={formData.description || ""}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
@@ -271,6 +271,7 @@ const BookModal: React.FC<BookModalProps> = ({
                 }
                 placeholder="0.00"
                 disabled={isLoading}
+                className="w-full"
               />
             </div>
             <div className="space-y-2">
@@ -282,7 +283,7 @@ const BookModal: React.FC<BookModalProps> = ({
                 }
                 disabled={isLoading}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select genre" />
                 </SelectTrigger>
                 <SelectContent>
@@ -299,11 +300,14 @@ const BookModal: React.FC<BookModalProps> = ({
               <Select
                 value={formData.productType}
                 onValueChange={(value: "physical" | "digital") =>
-                  setFormData({ ...formData, productType: value })
+                  setFormData({
+                    ...formData,
+                    productType: value as ProductType,
+                  })
                 }
                 disabled={isLoading}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -319,7 +323,7 @@ const BookModal: React.FC<BookModalProps> = ({
               <Label htmlFor="imageUrl">Image URL</Label>
               <Input
                 id="imageUrl"
-                value={formData.imageUrl}
+                value={formData.imageUrl || ""}
                 onChange={(e) =>
                   setFormData({ ...formData, imageUrl: e.target.value })
                 }
@@ -331,7 +335,7 @@ const BookModal: React.FC<BookModalProps> = ({
               <Label htmlFor="buttonText">Button Text</Label>
               <Input
                 id="buttonText"
-                value={formData.buttonText}
+                value={formData.buttonText || ""}
                 onChange={(e) =>
                   setFormData({ ...formData, buttonText: e.target.value })
                 }
@@ -350,7 +354,7 @@ const BookModal: React.FC<BookModalProps> = ({
                   <Label htmlFor="downloadUrl">Download URL *</Label>
                   <Input
                     id="downloadUrl"
-                    value={formData.downloadUrl}
+                    value={formData.downloadUrl || ""}
                     onChange={(e) =>
                       setFormData({ ...formData, downloadUrl: e.target.value })
                     }
@@ -363,7 +367,7 @@ const BookModal: React.FC<BookModalProps> = ({
                     <Label htmlFor="fileSize">File Size</Label>
                     <Input
                       id="fileSize"
-                      value={formData.fileSize}
+                      value={formData.fileSize || ""}
                       onChange={(e) =>
                         setFormData({ ...formData, fileSize: e.target.value })
                       }
@@ -375,7 +379,7 @@ const BookModal: React.FC<BookModalProps> = ({
                     <Label htmlFor="format">Format</Label>
                     <Input
                       id="format"
-                      value={formData.format}
+                      value={formData.format || ""}
                       onChange={(e) =>
                         setFormData({ ...formData, format: e.target.value })
                       }

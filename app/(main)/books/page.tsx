@@ -48,7 +48,15 @@ const BooksPage = () => {
         setError(true);
         toast.error(booksRes.error);
       } else {
-        setBooks(booksRes);
+        // Transform the price from Decimal to number if needed
+        const transformedBooks = booksRes.map((book: any) => ({
+          ...book,
+          price:
+            typeof book.price === "string"
+              ? parseFloat(book.price)
+              : book.price,
+        }));
+        setBooks(transformedBooks);
       }
 
       if (genresRes.error) {
@@ -79,13 +87,18 @@ const BooksPage = () => {
     const matchesGenre =
       selectedGenre === "all" || book.genreId === selectedGenre;
 
-    return matchesSearch && matchesGenre;
+    // Only show available books
+    const isAvailable = book.isAvailable;
+
+    return matchesSearch && matchesGenre && isAvailable;
   });
 
-  // Get book count for each genre
+  // Get book count for each genre (only available books)
   const getBookCount = (genreId: string) => {
-    if (genreId === "all") return books.length;
-    return books.filter((book) => book.genreId === genreId).length;
+    if (genreId === "all")
+      return books.filter((book) => book.isAvailable).length;
+    return books.filter((book) => book.genreId === genreId && book.isAvailable)
+      .length;
   };
 
   // Navigation buttons with dynamic categories
@@ -109,7 +122,7 @@ const BooksPage = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="flex items-center justify-center py-16">
             <div className="flex flex-col items-center space-y-4">
@@ -125,7 +138,7 @@ const BooksPage = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="flex items-center justify-center p-4">
         <Card>
           <CardContent className="flex items-center justify-center py-16">
             <div className="flex flex-col items-center space-y-4 text-center">
@@ -148,41 +161,40 @@ const BooksPage = () => {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-4 py-6 pt-0">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Desktop Sidebar - Hidden on mobile */}
-          <div className="hidden lg:block w-64 flex-shrink-0">
-            <div className="sticky top-28">
-              <Card className="bg-card/50 backdrop-blur-sm border-border/40 shadow-lg">
-                <CardContent className="p-4">
-                  {/* Compact Header */}
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-accent-3 flex items-center justify-center">
-                        <BookOpen className="w-4 h-4 text-white" />
-                      </div>
-                      <h2 className="text-lg font-semibold text-foreground">
-                        Genres
-                      </h2>
+    <div className="container mx-auto px-4 py-6 pt-0">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Desktop Sidebar - Hidden on mobile */}
+        <div className="hidden lg:block w-64 flex-shrink-0">
+          <div className="sticky top-28">
+            <Card className="bg-card/50 backdrop-blur-sm border-border/40 shadow-lg">
+              <CardContent className="p-4">
+                {/* Compact Header */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-accent-3 flex items-center justify-center">
+                      <BookOpen className="w-4 h-4 text-white" />
                     </div>
-                    <div className="h-px bg-gradient-to-r from-border to-transparent" />
+                    <h2 className="text-lg font-semibold text-foreground">
+                      Genres
+                    </h2>
                   </div>
+                  <div className="h-px bg-gradient-to-r from-border to-transparent" />
+                </div>
 
-                  {/* Compact Genre Buttons */}
-                  <div className="space-y-1">
-                    {navigationButtons.map((item) => {
-                      const IconComponent = item.icon;
-                      const isSelected = selectedGenre === item.value;
-                      const bookCount = getBookCount(item.value);
+                {/* Compact Genre Buttons */}
+                <div className="space-y-1">
+                  {navigationButtons.map((item) => {
+                    const IconComponent = item.icon;
+                    const isSelected = selectedGenre === item.value;
+                    const bookCount = getBookCount(item.value);
 
-                      return (
-                        <Button
-                          key={item.value}
-                          onClick={() => setSelectedGenre(item.value)}
-                          variant="ghost"
-                          size="sm"
-                          className={`
+                    return (
+                      <Button
+                        key={item.value}
+                        onClick={() => setSelectedGenre(item.value)}
+                        variant="ghost"
+                        size="sm"
+                        className={`
                             w-full justify-between h-8 px-3 text-sm transition-all duration-200
                             ${
                               isSelected
@@ -190,23 +202,23 @@ const BooksPage = () => {
                                 : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                             }
                           `}
-                        >
-                          <div className="flex items-center gap-2">
-                            <IconComponent
-                              className={`w-3 h-3 ${
-                                isSelected
-                                  ? "text-primary"
-                                  : "text-muted-foreground"
-                              }`}
-                            />
-                            <span className="font-medium truncate">
-                              {item.label}
-                            </span>
-                          </div>
+                      >
+                        <div className="flex items-center gap-2">
+                          <IconComponent
+                            className={`w-3 h-3 ${
+                              isSelected
+                                ? "text-primary"
+                                : "text-muted-foreground"
+                            }`}
+                          />
+                          <span className="font-medium truncate">
+                            {item.label}
+                          </span>
+                        </div>
 
-                          <Badge
-                            variant="secondary"
-                            className={`
+                        <Badge
+                          variant="secondary"
+                          className={`
                               h-5 px-1.5 text-xs font-medium ml-2
                               ${
                                 isSelected
@@ -214,159 +226,160 @@ const BooksPage = () => {
                                   : "bg-muted text-muted-foreground"
                               }
                             `}
-                          >
-                            {bookCount}
-                          </Badge>
-                        </Button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Compact Footer Stats */}
-                  <div className="mt-4 pt-3 border-t border-border/40">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground font-medium">
-                        Total
-                      </span>
-                      <Badge variant="outline" className="h-5 px-2 text-xs">
-                        {books.length}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            {/* Mobile Dropdown + Search Bar */}
-            <div className="mb-6 flex flex-col sm:flex-row gap-4">
-              {/* Mobile Genre Dropdown - Visible only on mobile */}
-              <div className="lg:hidden">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full sm:w-auto justify-between min-w-[200px]"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Filter className="w-4 h-4" />
-                        <span>{getSelectedGenreLabel()}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {getBookCount(selectedGenre)}
+                        >
+                          {bookCount}
                         </Badge>
-                        <ChevronDown className="w-4 h-4" />
-                      </div>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="start">
-                    {navigationButtons.map((item) => {
-                      const IconComponent = item.icon;
-                      const isSelected = selectedGenre === item.value;
-                      const bookCount = getBookCount(item.value);
+                      </Button>
+                    );
+                  })}
+                </div>
 
-                      return (
-                        <DropdownMenuItem
-                          key={item.value}
-                          onClick={() => setSelectedGenre(item.value)}
-                          className={`
+                {/* Compact Footer Stats */}
+                <div className="mt-4 pt-3 border-t border-border/40">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium">
+                      Total Available
+                    </span>
+                    <Badge variant="outline" className="h-5 px-2 text-xs">
+                      {books.filter((book) => book.isAvailable).length}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          {/* Mobile Dropdown + Search Bar */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4">
+            {/* Mobile Genre Dropdown - Visible only on mobile */}
+            <div className="lg:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto justify-between min-w-[200px]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Filter className="w-4 h-4" />
+                      <span>{getSelectedGenreLabel()}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {getBookCount(selectedGenre)}
+                      </Badge>
+                      <ChevronDown className="w-4 h-4" />
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="start">
+                  {navigationButtons.map((item) => {
+                    const IconComponent = item.icon;
+                    const isSelected = selectedGenre === item.value;
+                    const bookCount = getBookCount(item.value);
+
+                    return (
+                      <DropdownMenuItem
+                        key={item.value}
+                        onClick={() => setSelectedGenre(item.value)}
+                        className={`
                             flex items-center justify-between cursor-pointer
                             ${isSelected ? "bg-primary/10 text-primary" : ""}
                           `}
+                      >
+                        <div className="flex items-center gap-2">
+                          <IconComponent className="w-4 h-4" />
+                          <span>{item.label}</span>
+                        </div>
+                        <Badge
+                          variant={isSelected ? "default" : "secondary"}
+                          className="text-xs"
                         >
-                          <div className="flex items-center gap-2">
-                            <IconComponent className="w-4 h-4" />
-                            <span>{item.label}</span>
-                          </div>
-                          <Badge
-                            variant={isSelected ? "default" : "secondary"}
-                            className="text-xs"
-                          >
-                            {bookCount}
-                          </Badge>
-                        </DropdownMenuItem>
-                      );
-                    })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Search Bar */}
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search books by title or author..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+                          {bookCount}
+                        </Badge>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
-            {/* Responsive Books Grid - Cards fill space on small devices */}
-            {filteredBooks?.length > 0 ? (
-              <div
-                className="grid gap-4 sm:gap-6 auto-rows-fr
+            {/* Search Bar */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search books by title, author, or description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Responsive Books Grid - Cards fill space on small devices */}
+          {filteredBooks?.length > 0 ? (
+            <div
+              className="grid gap-4 sm:gap-6
                 grid-cols-1 
                 sm:grid-cols-2 
                 md:grid-cols-2
                 lg:grid-cols-2 
                 xl:grid-cols-3 
                 2xl:grid-cols-4"
-              >
-                {filteredBooks.map((book) => (
-                  <div key={book.id} className="w-full">
-                    <BookCard book={book} />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <BookOpen className="w-16 h-16 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">
-                  {searchTerm || selectedGenre !== "all"
-                    ? "No books found"
-                    : "No books available"}
-                </h3>
-                <p className="text-muted-foreground max-w-md">
-                  {searchTerm || selectedGenre !== "all"
-                    ? "Try adjusting your search or filter criteria."
-                    : "Books will appear here once they are added to the collection."}
-                </p>
-                {(searchTerm || selectedGenre !== "all") && (
-                  <Button
-                    onClick={() => {
-                      setSearchTerm("");
-                      setSelectedGenre("all");
-                    }}
-                    variant="outline"
-                    className="mt-4"
-                  >
-                    Clear Filters
-                  </Button>
+            >
+              {filteredBooks.map((book) => (
+                <div key={book.id} className="h-full">
+                  <BookCard book={book} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <BookOpen className="w-16 h-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">
+                {searchTerm || selectedGenre !== "all"
+                  ? "No books found"
+                  : "No books available"}
+              </h3>
+              <p className="text-muted-foreground max-w-md">
+                {searchTerm || selectedGenre !== "all"
+                  ? "Try adjusting your search or filter criteria."
+                  : "Books will appear here once they are added to the collection."}
+              </p>
+              {(searchTerm || selectedGenre !== "all") && (
+                <Button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedGenre("all");
+                  }}
+                  variant="outline"
+                  className="mt-4"
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Results Summary */}
+          {books?.length > 0 && (
+            <div className="mt-8 flex items-center justify-between text-sm text-muted-foreground">
+              <div className="flex items-center space-x-2">
+                <span>
+                  Showing {filteredBooks?.length} of{" "}
+                  {books.filter((book) => book.isAvailable).length} available
+                  books
+                </span>
+                {selectedGenre !== "all" && (
+                  <Badge variant="secondary">
+                    {genres.find((g) => g.id === selectedGenre)?.name}
+                  </Badge>
                 )}
               </div>
-            )}
-
-            {/* Results Summary */}
-            {books?.length > 0 && (
-              <div className="mt-8 flex items-center justify-between text-sm text-muted-foreground">
-                <div className="flex items-center space-x-2">
-                  <span>
-                    Showing {filteredBooks?.length} of {books.length} books
-                  </span>
-                  {selectedGenre !== "all" && (
-                    <Badge variant="secondary">
-                      {genres.find((g) => g.id === selectedGenre)?.name}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
