@@ -225,7 +225,7 @@ const PodcastsPage = () => {
 
               <p className="text-background/80 text-sm md:text-base leading-relaxed max-w-3xl">
                 Welcome to The Household Reformation Podcast — where we seek to
-                shape words and forge culture. We're Reformed Baptists,
+                shape words and forge culture. We&apos;re Reformed Baptists,
                 husbands, fathers, and writers dedicated to rebuilding the ruins
                 of Christendom, one household, one conversation, one generation
                 at a time.

@@ -212,9 +212,9 @@ export default function About() {
                 <CardContent className="p-8">
                   <Quote className="w-10 h-10 text-accent-2 mb-6" />
                   <blockquote className="text-lg md:text-xl font-medium text-foreground mb-6 leading-relaxed">
-                    "I am a husband, father, and Reformed Christian — called to
-                    be a builder of households that stand as towers of strength
-                    in a crumbling culture."
+                    &quot;I am a husband, father, and Reformed Christian —
+                    called to be a builder of households that stand as towers of
+                    strength in a crumbling culture.&quot;
                   </blockquote>
                   <cite className="text-accent-3 font-medium">
                     — Bryan D. Furlong
@@ -352,7 +352,7 @@ export default function About() {
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-6">
                     <p className="text-muted-foreground">
-                      Here, you'll find{" "}
+                      Here, you&apos;ll find{" "}
                       <span className="font-semibold text-foreground bg-gradient-to-r from-accent-2/20 to-accent-3/20 px-2 py-1 rounded-lg">
                         bold calls to action and biblical truth
                       </span>
@@ -372,10 +372,10 @@ export default function About() {
                     <Card className="bg-gradient-to-r from-accent-2/20 to-accent-3/20 border-accent-2/30 rounded-xl p-6">
                       <Quote className="w-6 h-6 text-accent-2" />
                       <p className="text-foreground font-medium italic">
-                        "Every Christian home should be a little seminary, a
-                        little church, a little kingdom where Christ reigns
+                        &quot;Every Christian home should be a little seminary,
+                        a little church, a little kingdom where Christ reigns
                         supreme and His ways are taught, practiced, and passed
-                        down."
+                        down.&quot;
                       </p>
                     </Card>
                   </div>
@@ -383,8 +383,8 @@ export default function About() {
 
                 <div className="text-center pt-8">
                   <p className="text-2xl font-semibold text-accent-2 mb-6 font-title">
-                    "The hand that rocks the cradle rules the world. Let's make
-                    sure it's a Christian hand."
+                    &quot;The hand that rocks the cradle rules the world.
+                    Let&apos;s make sure it&apos;s a Christian hand.&quot;
                   </p>
                 </div>
               </div>
@@ -399,15 +399,15 @@ export default function About() {
           <div className="max-w-4xl mx-auto">
             <div className="mb-12">
               <h3 className="text-5xl md:text-6xl font-title font-bold text-background mb-8">
-                Let's Raise Oaks.
+                Let&apos;s Raise Oaks.
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-2 to-accent-3">
-                  Let's Build Altars.
+                  Let&apos;s Build Altars.
                 </span>
               </h3>
               <div className="space-y-4">
                 <p className="text-2xl text-background/90 font-medium font-title">
-                  Let's live like it's true.
+                  Let&apos;s live like it&apos;s true.
                 </p>
                 <p className="text-lg text-background/80 max-w-2xl mx-auto">
                   Join the movement of Christian households taking back culture,
@@ -446,9 +446,9 @@ export default function About() {
                 Legacy without apology.
               </p>
               <p className="text-sm italic max-w-lg mx-auto">
-                "For I know the plans I have for you," declares the Lord, "plans
-                to prosper you and not to harm you, to give you hope and a
-                future."
+                &quot;For I know the plans I have for you,&quot; declares the
+                Lord, &quot;plans to prosper you and not to harm you, to give
+                you hope and a future.&quot;
               </p>
             </div>
           </div>

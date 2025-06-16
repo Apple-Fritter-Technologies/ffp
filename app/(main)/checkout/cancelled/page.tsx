@@ -407,8 +407,8 @@ const CancelledPage = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            If you're experiencing issues with payment or have questions about
-            your order:
+            If you&apos;re experiencing issues with payment or have questions
+            about your order:
           </p>
           <ul className="space-y-2 text-sm">
             <li className="flex items-start gap-2">
@@ -418,7 +418,7 @@ const CancelledPage = () => {
             <li className="flex items-start gap-2">
               <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0"></span>
               <span>
-                Check if your card has sufficient funds or hasn't expired
+                Check if your card has sufficient funds or hasn&apos;t expired
               </span>
             </li>
             <li className="flex items-start gap-2">

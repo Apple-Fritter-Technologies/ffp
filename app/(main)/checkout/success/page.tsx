@@ -371,7 +371,7 @@ const SuccessPage = () => {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Mail className="h-5 w-5" />
-                <span>What's Next?</span>
+                <span>What&apos;s Next?</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
