@@ -6,6 +6,8 @@ import {
   Trash2,
   Download,
   Package,
+  BookOpen,
+  Store,
 } from "lucide-react";
 import { useCart } from "@/store/use-cart";
 import { Button } from "@/components/ui/button";
@@ -18,10 +20,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { getCartItemDisplayInfo } from "@/lib/cart-helpers";
 
 export function CartButton() {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
   const {
     items,
     totalItems,
@@ -33,6 +37,10 @@ export function CartButton() {
     hasDigitalItems,
     getPhysicalItems,
     getDigitalItems,
+    getBookItems,
+    getShopItems,
+    hasBookItems,
+    hasShopItems,
   } = useCart();
 
   const formatPrice = (price: number) => {
@@ -44,11 +52,13 @@ export function CartButton() {
 
   const handleCheckout = () => {
     setIsOpen(false);
-    redirect("/checkout");
+    router.push("/checkout");
   };
 
   const physicalItems = getPhysicalItems();
   const digitalItems = getDigitalItems();
+  const bookItems = getBookItems();
+  const shopItems = getShopItems();
 
   const renderProductTypeIcon = (
     productType: "physical" | "digital" | undefined
@@ -59,10 +69,33 @@ export function CartButton() {
     return <Package className="h-3 w-3 text-green-500" />;
   };
 
+  const renderItemTypeIcon = (itemType: "book" | "shop" | undefined) => {
+    if (itemType === "shop") {
+      return <Store className="h-3 w-3 text-purple-500" />;
+    }
+    return <BookOpen className="h-3 w-3 text-orange-500" />;
+  };
+
+  const handleUpdateQuantity = (
+    id: string,
+    quantity: number,
+    itemType: "book" | "shop" | undefined
+  ) => {
+    updateQuantity(id, quantity, itemType);
+  };
+
+  const handleRemoveItem = (
+    id: string,
+    itemType: "book" | "shop" | undefined
+  ) => {
+    removeItem(id, itemType);
+  };
+
   const renderItemSection = (
-    items: typeof physicalItems,
+    items: typeof bookItems,
     title: string,
-    icon: React.ReactNode
+    icon: React.ReactNode,
+    itemType: "book" | "shop"
   ) => {
     if (items.length === 0) return null;
 
@@ -76,73 +109,152 @@ export function CartButton() {
           </Badge>
         </div>
         <div className="space-y-3">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center space-x-3 p-3 border rounded-lg bg-muted/30"
-            >
-              {item.image && (
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-16 h-20 object-cover rounded"
-                />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2">
-                  <h4 className="font-medium text-sm truncate">{item.title}</h4>
-                  {renderProductTypeIcon(item.productType)}
-                </div>
-                {item.author && (
-                  <p className="text-xs text-muted-foreground">
-                    by {item.author}
-                  </p>
+          {items.map((item) => {
+            const displayInfo = getCartItemDisplayInfo(item);
+
+            return (
+              <div
+                key={`${item.id}-${item.itemType}`}
+                className="flex items-center space-x-3 p-3 border rounded-lg bg-muted/30"
+              >
+                {item.image && (
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-16 h-20 object-cover rounded"
+                  />
                 )}
-                <p className="text-sm text-muted-foreground">
-                  {formatPrice(item.price)} each
-                </p>
-                <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="h-7 w-7 p-0"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="font-medium text-sm w-6 text-center">
-                      {item.quantity}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="h-7 w-7 p-0"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <h4 className="font-medium text-sm truncate">
+                      {item.title}
+                    </h4>
+                    <div className="flex items-center space-x-1">
+                      {renderItemTypeIcon(item.itemType)}
+                      {renderProductTypeIcon(item.productType)}
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-sm">
-                      {formatPrice(item.price * item.quantity)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeItem(item.id)}
-                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Badge
+                      variant={
+                        displayInfo.badgeVariant as
+                          | "default"
+                          | "secondary"
+                          | "destructive"
+                          | "outline"
+                      }
+                      className="text-xs"
                     >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                      {displayInfo.badgeText}
+                    </Badge>
+                    {item.productType && (
+                      <Badge
+                        variant={
+                          item.productType === "digital"
+                            ? "outline"
+                            : "secondary"
+                        }
+                        className="text-xs"
+                      >
+                        {item.productType}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {displayInfo.showAuthor && (
+                    <p className="text-xs text-muted-foreground mb-1">
+                      by {item.author}
+                    </p>
+                  )}
+
+                  {item.description && (
+                    <p className="text-xs text-muted-foreground mb-1 truncate">
+                      {item.description}
+                    </p>
+                  )}
+
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {formatPrice(item.price)} each
+                  </p>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleUpdateQuantity(
+                            item.id,
+                            item.quantity - 1,
+                            item.itemType
+                          )
+                        }
+                        className="h-7 w-7 p-0"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="font-medium text-sm w-6 text-center">
+                        {item.quantity}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleUpdateQuantity(
+                            item.id,
+                            item.quantity + 1,
+                            item.itemType
+                          )
+                        }
+                        className="h-7 w-7 p-0"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium text-sm">
+                        {formatPrice(item.price * item.quantity)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveItem(item.id, item.itemType)}
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
+  };
+
+  const getCartSummary = () => {
+    const summary = [];
+
+    if (hasBookItems() && hasShopItems()) {
+      summary.push("Mixed Cart");
+    } else if (hasBookItems()) {
+      summary.push("Books");
+    } else if (hasShopItems()) {
+      summary.push("Shop Items");
+    }
+
+    if (hasPhysicalItems() && hasDigitalItems()) {
+      summary.push("Physical & Digital");
+    } else if (hasPhysicalItems()) {
+      summary.push("Physical Items");
+    } else if (hasDigitalItems()) {
+      summary.push("Digital Items");
+    }
+
+    return summary.join(" • ");
   };
 
   return (
@@ -165,9 +277,9 @@ export function CartButton() {
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span>Shopping Cart</span>
-              {hasPhysicalItems() && hasDigitalItems() && (
+              {items.length > 0 && (
                 <Badge variant="outline" className="text-xs">
-                  Mixed Items
+                  {getCartSummary()}
                 </Badge>
               )}
             </div>
@@ -189,23 +301,52 @@ export function CartButton() {
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">Your cart is empty</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Add books or shop items to get started
+              </p>
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Books Section */}
               {renderItemSection(
-                physicalItems,
-                "Physical Books",
-                <Package className="h-4 w-4 text-green-500" />
+                bookItems,
+                "Books",
+                <BookOpen className="h-4 w-4 text-orange-500" />,
+                "book"
               )}
 
-              {physicalItems.length > 0 && digitalItems.length > 0 && (
-                <Separator />
+              {/* Separator if both sections exist */}
+              {bookItems.length > 0 && shopItems.length > 0 && <Separator />}
+
+              {/* Shop Items Section */}
+              {renderItemSection(
+                shopItems,
+                "Shop Items",
+                <Store className="h-4 w-4 text-purple-500" />,
+                "shop"
               )}
 
-              {renderItemSection(
-                digitalItems,
-                "Digital Books",
-                <Download className="h-4 w-4 text-blue-500" />
+              {/* Alternative grouping by product type */}
+              {bookItems.length === 0 && shopItems.length === 0 && (
+                <>
+                  {renderItemSection(
+                    physicalItems,
+                    "Physical Items",
+                    <Package className="h-4 w-4 text-green-500" />,
+                    physicalItems[0]?.itemType as "book" | "shop"
+                  )}
+
+                  {physicalItems.length > 0 && digitalItems.length > 0 && (
+                    <Separator />
+                  )}
+
+                  {renderItemSection(
+                    digitalItems,
+                    "Digital Items",
+                    <Download className="h-4 w-4 text-blue-500" />,
+                    digitalItems[0]?.itemType as "book" | "shop"
+                  )}
+                </>
               )}
             </div>
           )}
@@ -220,6 +361,27 @@ export function CartButton() {
                   <span>Total Items:</span>
                   <span className="font-medium">{totalItems}</span>
                 </div>
+
+                {hasBookItems() && (
+                  <div className="flex justify-between">
+                    <span className="flex items-center space-x-1">
+                      <BookOpen className="h-3 w-3 text-orange-500" />
+                      <span>Books:</span>
+                    </span>
+                    <span className="font-medium">{bookItems.length}</span>
+                  </div>
+                )}
+
+                {hasShopItems() && (
+                  <div className="flex justify-between">
+                    <span className="flex items-center space-x-1">
+                      <Store className="h-3 w-3 text-purple-500" />
+                      <span>Shop:</span>
+                    </span>
+                    <span className="font-medium">{shopItems.length}</span>
+                  </div>
+                )}
+
                 {hasPhysicalItems() && (
                   <div className="flex justify-between">
                     <span className="flex items-center space-x-1">
@@ -229,6 +391,7 @@ export function CartButton() {
                     <span className="font-medium">{physicalItems.length}</span>
                   </div>
                 )}
+
                 {hasDigitalItems() && (
                   <div className="flex justify-between">
                     <span className="flex items-center space-x-1">

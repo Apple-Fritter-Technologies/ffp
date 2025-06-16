@@ -14,108 +14,102 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { orderId } = await req.json();
+    const { cartData } = await req.json();
 
-    if (!orderId) {
+    if (!cartData || !cartData.items || cartData.items.length === 0) {
       return NextResponse.json(
-        { error: "Order ID is required" },
+        { error: "Cart data is required" },
         { status: 400 }
       );
     }
 
-    // Fetch order with items
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        orderItems: {
-          include: {
-            book: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            clerkId: true,
-          },
-        },
-        shippingAddress: true,
-      },
-    });
-
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    // Check if user can access this order
-    if (
-      auth.user?.metadata?.role !== "admin" &&
-      order.userId !== auth.user?.id
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Get fresh user data from Clerk
-    let clerkUser;
+    // Get user data from Clerk
     let userEmail = "";
     let userName = "";
+    let userId = "";
 
     try {
+      // Check if we have a clerkId in the auth object
+      const clerkUserId =
+        auth.user?.clerkId || auth.user.sub || cartData.userId;
+
+      console.log("Attempting to fetch Clerk user with ID:", clerkUserId);
+
+      if (!clerkUserId) {
+        throw new Error("No Clerk user ID available");
+      }
+
       const client = await clerkClient();
-      clerkUser = await client.users.getUser(order.user.clerkId);
+      const clerkUser = await client.users.getUser(clerkUserId);
+
       userEmail = clerkUser.primaryEmailAddress?.emailAddress || "";
       userName =
         clerkUser.fullName ||
         `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
         "";
-
-      console.log("Fetched user from Clerk:", {
-        email: userEmail,
-        name: userName,
-        clerkId: clerkUser.id,
-      });
+      userId = clerkUser.id;
     } catch (clerkError) {
       console.error("Error fetching user from Clerk:", clerkError);
-      // Fallback to database user data if available
-      userEmail = order.user.email || "";
-      userName = order.user.name || "";
-    }
 
-    // Update user in database if data is missing or incorrect
-    if (
-      !order.user.email ||
-      order.user.name === "undefined " ||
-      !order.user.name?.trim() ||
-      order.user.email !== userEmail ||
-      order.user.name !== userName
-    ) {
+      // Fallback to database user data if available
       try {
-        await prisma.user.update({
-          where: { id: order.userId },
-          data: {
+        const dbQuery: any = {};
+
+        // Try different ways to find the user
+        if (auth.user?.id) {
+          dbQuery.id = auth.user.id;
+        } else if (auth.user?.clerkId) {
+          dbQuery.clerkId = auth.user.clerkId;
+        } else if (cartData.userId) {
+          // Assume cartData.userId might be clerkId
+          dbQuery.clerkId = cartData.userId;
+        } else {
+          throw new Error("No valid user identifier found");
+        }
+
+        console.log("Fallback DB query:", dbQuery);
+
+        const dbUser = await prisma.user.findUnique({
+          where: dbQuery,
+        });
+
+        if (dbUser) {
+          userEmail = dbUser.email || "";
+          userName = dbUser.name || "";
+          userId = dbUser.clerkId || dbUser.id;
+          console.log("Found user in database:", {
             email: userEmail,
             name: userName,
-          },
-        });
-        console.log("Updated user data in database");
-      } catch (updateError) {
-        console.error("Failed to update user data:", updateError);
+            userId: userId,
+          });
+        } else {
+          console.warn("User not found in database");
+          // We'll proceed with guest checkout
+          userId = cartData.userId || "guest";
+        }
+      } catch (dbError) {
+        console.error("Error fetching user from database:", dbError);
+        // Proceed with guest checkout
+        userId = cartData.userId || "guest";
       }
     }
 
-    // Create line items for Stripe
+    // Create line items for Stripe from cart data
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] =
-      order.orderItems.map((item) => ({
+      cartData.items.map((item: any) => ({
         price_data: {
           currency: "usd",
           product_data: {
-            name: item.book.title,
-            description: item.book.description || undefined,
-            images: item.book.imageUrl ? [item.book.imageUrl] : undefined,
+            name: item.title,
+            description: item.description || undefined,
+            images: item.image ? [item.image] : undefined,
             metadata: {
-              bookId: item.book.id,
-              productType: item.book.productType,
+              itemId: item.id,
+              itemType: item.itemType,
+              productType: item.productType,
+              ...(item.itemType === "book" &&
+                item.genreId && { genreId: item.genreId }),
+              ...(item.author && { author: item.author }),
             },
           },
           unit_amount: Math.round(Number(item.price) * 100), // Convert to cents
@@ -124,7 +118,7 @@ export async function POST(req: NextRequest) {
       }));
 
     // Add shipping if physical items exist
-    if (order.hasPhysicalItems) {
+    if (cartData.hasPhysicalItems) {
       lineItems.push({
         price_data: {
           currency: "usd",
@@ -146,10 +140,18 @@ export async function POST(req: NextRequest) {
       success_url: `${ApiUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${ApiUrl}/checkout/cancelled`,
       metadata: {
-        orderId: order.id,
-        userId: order.userId,
-        userEmail: userEmail, // Add email for better tracking
-        totalAmount: order.totalPrice.toString(), // Add total for verification
+        userId: userId,
+        userEmail: userEmail,
+        totalAmount: cartData.totalPrice.toString(),
+        hasPhysicalItems: cartData.hasPhysicalItems.toString(),
+        // Store essential cart info in metadata (Stripe has limits)
+        itemCount: cartData.items.length.toString(),
+        hasBooks: cartData.items
+          .some((item: any) => item.itemType === "book")
+          .toString(),
+        hasShopItems: cartData.items
+          .some((item: any) => item.itemType === "shop")
+          .toString(),
       },
       automatic_tax: {
         enabled: false,
@@ -157,71 +159,61 @@ export async function POST(req: NextRequest) {
       billing_address_collection: "required",
     };
 
-    // Create or get Stripe customer with proper error handling
+    // Create or get Stripe customer
     let customerId: string | undefined;
 
     if (userEmail && userEmail.trim() !== "") {
       try {
-        // Look for existing customer by email
         const existingCustomers = await stripe.customers.list({
           email: userEmail,
           limit: 1,
         });
 
         if (existingCustomers.data.length > 0) {
-          // Use existing customer
           customerId = existingCustomers.data[0].id;
-
-          // Update customer with latest information
           await stripe.customers.update(customerId, {
             name: userName || undefined,
             metadata: {
-              userId: order.userId,
-              clerkId: order.user.clerkId,
+              userId: userId,
+              clerkId: userId, // Use userId as clerkId
             },
           });
-          console.log("Using existing Stripe customer:", customerId);
         } else {
-          // Create new customer
           const newCustomer = await stripe.customers.create({
             email: userEmail,
             name: userName || undefined,
             metadata: {
-              userId: order.userId,
-              clerkId: order.user.clerkId,
+              userId: userId,
+              clerkId: userId,
             },
           });
           customerId = newCustomer.id;
           console.log("Created new Stripe customer:", customerId);
         }
 
-        // Set customer ID - this will pre-fill customer information
         sessionParams.customer = customerId;
       } catch (customerError) {
         console.error("Error creating/retrieving customer:", customerError);
-        // Fallback to customer_email and enable customer_creation
         sessionParams.customer_email = userEmail;
         sessionParams.customer_creation = "always";
       }
     } else {
       console.warn("No valid email found for user, using guest checkout");
-      // For guest checkout, enable customer creation
       sessionParams.customer_creation = "always";
     }
 
     // Handle shipping for physical items
-    if (order.hasPhysicalItems) {
+    if (cartData.hasPhysicalItems) {
       sessionParams.shipping_address_collection = {
-        allowed_countries: ["US", "CA", "GB", "AU", "IN"], // Add more countries as needed
+        allowed_countries: ["US", "CA", "GB", "AU", "IN"],
       };
 
-      // Create shipping rate
       sessionParams.shipping_options = [
         {
           shipping_rate_data: {
             type: "fixed_amount",
             fixed_amount: {
-              amount: 500, // $5.00 in cents
+              amount: 500,
               currency: "usd",
             },
             display_name: "Standard Shipping",
@@ -239,52 +231,59 @@ export async function POST(req: NextRequest) {
         },
       ];
 
-      // Pre-fill shipping address if available and customer exists
-      if (order.shippingAddress && customerId) {
+      // Pre-fill shipping address if available
+      if (cartData.shippingAddress && customerId) {
         try {
-          // Update customer with shipping address
           await stripe.customers.update(customerId, {
             shipping: {
-              name: order.shippingAddress.name || userName || "",
+              name: cartData.shippingAddress.name || userName || "",
               address: {
-                line1: order.shippingAddress.street || "",
-                city: order.shippingAddress.city || "",
-                state: order.shippingAddress.state || "",
-                postal_code: order.shippingAddress.zipCode || "",
+                line1: cartData.shippingAddress.street || "",
+                city: cartData.shippingAddress.city || "",
+                state: cartData.shippingAddress.state || "",
+                postal_code: cartData.shippingAddress.zipCode || "",
                 country:
-                  order.shippingAddress.country === "United States"
+                  cartData.shippingAddress.country === "United States"
                     ? "US"
-                    : order.shippingAddress.country || "US",
+                    : cartData.shippingAddress.country || "US",
               },
-              phone: order.shippingAddress.phone || undefined,
+              phone: cartData.shippingAddress.phone || undefined,
             },
           });
-          console.log("Updated customer shipping address");
         } catch (shippingError) {
           console.error("Error setting shipping address:", shippingError);
         }
       }
     }
 
-    console.log("Creating Stripe session with params:", {
-      customer: sessionParams.customer,
-      customer_email: sessionParams.customer_email,
-      customer_creation: sessionParams.customer_creation,
-      billing_address_collection: sessionParams.billing_address_collection,
-      shipping_address_collection: sessionParams.shipping_address_collection,
-    });
-
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    // Update order status to processing
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: "processing",
-        updatedAt: new Date(),
-      },
-    });
+    // Store cart data in session metadata (with size limits)
+    try {
+      await stripe.checkout.sessions.update(session.id, {
+        metadata: {
+          ...sessionParams.metadata,
+          cartDataCompressed: JSON.stringify({
+            userId: userId,
+            items: cartData.items.map((item: any) => ({
+              id: item.id,
+              title: item.title.substring(0, 50),
+              price: item.price,
+              quantity: item.quantity,
+              itemType: item.itemType,
+              productType: item.productType,
+            })),
+            totalPrice: cartData.totalPrice,
+            hasPhysicalItems: cartData.hasPhysicalItems,
+            shippingAddress: cartData.shippingAddress,
+          }).substring(0, 500),
+        },
+      });
+      console.log("Cart data stored in session metadata");
+    } catch (updateError) {
+      console.error("Error updating session metadata:", updateError);
+    }
 
     return NextResponse.json({
       sessionId: session.id,
@@ -299,7 +298,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Get payment details
+// Get payment details (unchanged)
 export async function GET(req: NextRequest) {
   try {
     const auth = await verifySession(req);
@@ -312,9 +311,7 @@ export async function GET(req: NextRequest) {
     const orderId = searchParams.get("orderId");
 
     if (sessionId) {
-      // Retrieve Stripe session
       const session = await stripe.checkout.sessions.retrieve(sessionId);
-
       return NextResponse.json({
         status: session.payment_status,
         customerEmail: session.customer_email,
@@ -324,12 +321,10 @@ export async function GET(req: NextRequest) {
     }
 
     if (orderId) {
-      // Get payment records for order
       const payments = await prisma.payment.findMany({
         where: { orderId },
         orderBy: { createdAt: "desc" },
       });
-
       return NextResponse.json(payments);
     }
 

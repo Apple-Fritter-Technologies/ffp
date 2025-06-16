@@ -7,143 +7,185 @@ interface CartState {
   totalItems: number;
   totalPrice: number;
   addItem: (item: Omit<CartItem, "quantity">) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  removeItem: (id: string, itemType?: "book" | "shop") => void;
+  updateQuantity: (
+    id: string,
+    quantity: number,
+    itemType?: "book" | "shop"
+  ) => void;
   clearCart: () => void;
-  getItem: (id: string) => CartItem | undefined;
+  getItem: (id: string, itemType?: "book" | "shop") => CartItem | undefined;
   hasPhysicalItems: () => boolean;
   hasDigitalItems: () => boolean;
   getPhysicalItems: () => CartItem[];
   getDigitalItems: () => CartItem[];
+  getBookItems: () => CartItem[];
+  getShopItems: () => CartItem[];
+  hasBookItems: () => boolean;
+  hasShopItems: () => boolean;
+  getItemCount: (id: string, itemType: "book" | "shop") => number;
+  isInCart: (id: string, itemType: "book" | "shop") => boolean;
 }
 
 export const useCart = create<CartState>()(
   persist(
-    (set, get) => ({
-      items: [],
-      totalItems: 0,
-      totalPrice: 0,
-
-      addItem: (item) => {
+    (set, get) => {
+      // Helper function defined outside the returned object
+      const updateTotals = () => {
         const items = get().items;
-        const existingItem = items.find((i) => i.id === item.id);
+        set({
+          totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
+          totalPrice: items.reduce(
+            (sum, item) => sum + item.price * item.quantity,
+            0
+          ),
+        });
+      };
 
-        if (existingItem) {
+      return {
+        items: [],
+        totalItems: 0,
+        totalPrice: 0,
+
+        addItem: (item) => {
+          const items = get().items;
+          const existingItem = items.find(
+            (i) => i.id === item.id && i.itemType === item.itemType
+          );
+
+          if (existingItem) {
+            set((state) => ({
+              items: state.items.map((i) =>
+                i.id === item.id && i.itemType === item.itemType
+                  ? { ...i, quantity: i.quantity + 1 }
+                  : i
+              ),
+            }));
+          } else {
+            set((state) => ({
+              items: [
+                ...state.items,
+                {
+                  ...item,
+                  quantity: 1,
+                  // Ensure all CartItem properties are included with proper defaults
+                  image: item.image || undefined,
+                  author: item.author || undefined,
+                  description: item.description || undefined,
+                  productType: item.productType || "physical",
+                  itemType: item.itemType || "book", // Default to book for backward compatibility
+                  genreId: item.genreId || undefined,
+                },
+              ],
+            }));
+          }
+
+          updateTotals();
+        },
+
+        removeItem: (id, itemType) => {
           set((state) => ({
-            items: state.items.map((i) =>
-              i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-            ),
+            items: state.items.filter((item) => {
+              // If itemType is provided, match both id and itemType
+              // Otherwise, just match id (for backward compatibility)
+              if (itemType) {
+                return !(item.id === id && item.itemType === itemType);
+              }
+              return item.id !== id;
+            }),
           }));
-        } else {
+
+          updateTotals();
+        },
+
+        updateQuantity: (id, quantity, itemType) => {
+          if (quantity <= 0) {
+            get().removeItem(id, itemType);
+            return;
+          }
+
           set((state) => ({
-            items: [
-              ...state.items,
-              {
-                ...item,
-                quantity: 1,
-                // Ensure all CartItem properties are included
-                image: item.image || undefined,
-                author: item.author || undefined,
-                description: item.description || undefined,
-                productType: item.productType || "physical",
-              },
-            ],
+            items: state.items.map((item) => {
+              // If itemType is provided, match both id and itemType
+              // Otherwise, just match id (for backward compatibility)
+              if (itemType) {
+                return item.id === id && item.itemType === itemType
+                  ? { ...item, quantity }
+                  : item;
+              }
+              return item.id === id ? { ...item, quantity } : item;
+            }),
           }));
-        }
 
-        // Update computed values
-        const newState = get();
-        set({
-          totalItems: newState.items.reduce(
-            (sum, item) => sum + item.quantity,
-            0
-          ),
-          totalPrice: newState.items.reduce(
-            (sum, item) => sum + item.price * item.quantity,
-            0
-          ),
-        });
-      },
+          updateTotals();
+        },
 
-      removeItem: (id) => {
-        set((state) => ({
-          items: state.items.filter((item) => item.id !== id),
-        }));
+        clearCart: () => {
+          set({
+            items: [],
+            totalItems: 0,
+            totalPrice: 0,
+          });
+        },
 
-        // Update computed values
-        const newState = get();
-        set({
-          totalItems: newState.items.reduce(
-            (sum, item) => sum + item.quantity,
-            0
-          ),
-          totalPrice: newState.items.reduce(
-            (sum, item) => sum + item.price * item.quantity,
-            0
-          ),
-        });
-      },
+        getItem: (id, itemType) => {
+          const items = get().items;
+          if (itemType) {
+            return items.find(
+              (item) => item.id === id && item.itemType === itemType
+            );
+          }
+          return items.find((item) => item.id === id);
+        },
 
-      updateQuantity: (id, quantity) => {
-        if (quantity <= 0) {
-          get().removeItem(id);
-          return;
-        }
+        hasPhysicalItems: () => {
+          return get().items.some((item) => item.productType === "physical");
+        },
 
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id ? { ...item, quantity } : item
-          ),
-        }));
+        hasDigitalItems: () => {
+          return get().items.some((item) => item.productType === "digital");
+        },
 
-        // Update computed values
-        const newState = get();
-        set({
-          totalItems: newState.items.reduce(
-            (sum, item) => sum + item.quantity,
-            0
-          ),
-          totalPrice: newState.items.reduce(
-            (sum, item) => sum + item.price * item.quantity,
-            0
-          ),
-        });
-      },
+        getPhysicalItems: () => {
+          return get().items.filter((item) => item.productType === "physical");
+        },
 
-      clearCart: () => {
-        set({
-          items: [],
-          totalItems: 0,
-          totalPrice: 0,
-        });
-      },
+        getDigitalItems: () => {
+          return get().items.filter((item) => item.productType === "digital");
+        },
 
-      getItem: (id) => {
-        return get().items.find((item) => item.id === id);
-      },
+        getBookItems: () => {
+          return get().items.filter((item) => item.itemType === "book");
+        },
 
-      hasPhysicalItems: () => {
-        return get().items.some((item) => item.productType === "physical");
-      },
+        getShopItems: () => {
+          return get().items.filter((item) => item.itemType === "shop");
+        },
 
-      hasDigitalItems: () => {
-        return get().items.some((item) => item.productType === "digital");
-      },
+        hasBookItems: () => {
+          return get().items.some((item) => item.itemType === "book");
+        },
 
-      getPhysicalItems: () => {
-        return get().items.filter((item) => item.productType === "physical");
-      },
+        hasShopItems: () => {
+          return get().items.some((item) => item.itemType === "shop");
+        },
 
-      getDigitalItems: () => {
-        return get().items.filter((item) => item.productType === "digital");
-      },
-    }),
+        getItemCount: (id, itemType) => {
+          const item = get().getItem(id, itemType);
+          return item ? item.quantity : 0;
+        },
+
+        isInCart: (id, itemType) => {
+          return get().getItem(id, itemType) !== undefined;
+        },
+      };
+    },
     {
       name: "cart-storage",
       partialize: (state) => ({ items: state.items }),
       // Recompute totals on hydration
       onRehydrateStorage: () => (state) => {
-        if (state) {
+        if (state && state.items) {
           const totalItems = state.items.reduce(
             (sum, item) => sum + item.quantity,
             0

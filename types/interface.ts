@@ -88,6 +88,8 @@ export interface CartItem {
   author?: string;
   description?: string;
   productType?: "physical" | "digital";
+  itemType?: "book" | "shop"; // New field to distinguish between books and shop products
+  genreId?: string; // For books only
 }
 
 export interface Podcast {
@@ -113,22 +115,6 @@ export interface Contact {
   user?: User | null;
 }
 
-export interface Order {
-  id: string;
-  userId: string;
-  totalPrice: number;
-  items: OrderItem[];
-  status: OrderStatus;
-  hasPhysicalItems: boolean;
-  shippingAddressId?: string | null;
-  createdAt?: Date;
-  updatedAt?: Date;
-  user?: User;
-  shippingAddress?: Address | null;
-  orderItems?: OrderItem[];
-  payment: Payment[] | null;
-}
-
 export interface OrderItem {
   id: string;
   orderId: string;
@@ -137,6 +123,32 @@ export interface OrderItem {
   price: number;
   order?: Order;
   book?: Book;
+}
+
+export interface ShopOrderItem {
+  id: string;
+  orderId: string;
+  storeProductId: string;
+  quantity: number;
+  price: number;
+  order?: Order;
+  storeProduct?: StoreProduct;
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  totalPrice: number;
+  status: OrderStatus;
+  hasPhysicalItems: boolean;
+  shippingAddressId?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+  user?: User;
+  shippingAddress?: Address | null;
+  orderItems?: OrderItem[];
+  shopOrderItems?: ShopOrderItem[];
+  payment?: Payment[] | null;
 }
 
 export interface Newsletter {
@@ -170,8 +182,13 @@ export interface Payment {
 }
 
 export interface CreateOrderData {
-  items: {
+  bookItems?: {
     bookId: string;
+    quantity: number;
+    price: number;
+  }[];
+  shopItems?: {
+    storeProductId: string;
     quantity: number;
     price: number;
   }[];
@@ -203,6 +220,7 @@ export interface StoreProduct {
   format?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
+  shopOrderItems?: ShopOrderItem[];
 }
 
 export interface HomeData {
@@ -236,4 +254,18 @@ export interface AddressFormData {
   country?: string;
   phone?: string;
   isDefault?: boolean;
+}
+
+export interface StoreProductFormData {
+  id?: string;
+  title: string;
+  description?: string;
+  price: number;
+  imageUrl?: string;
+  buttonText?: string;
+  isAvailable?: boolean;
+  productType?: "physical" | "digital";
+  downloadUrl?: string;
+  fileSize?: string;
+  format?: string;
 }

@@ -9,6 +9,7 @@ import {
   MessageCircleIcon,
   Mic,
   Package,
+  ShoppingBag,
   ShoppingCartIcon,
   Twitter,
   User,
@@ -79,7 +80,6 @@ export const footerSupportLinks = [
   { name: "Shipping Information", href: "/shipping" },
   { name: "Returns & Exchanges", href: "/returns" },
   { name: "Refund Policy", href: "/refund" },
-  { name: "Help Center", href: "/help" },
 ];
 
 export const adminNavItems = [
@@ -97,6 +97,11 @@ export const adminNavItems = [
     label: "Books",
     href: "/admin/dashboard/books",
     icon: Book,
+  },
+  {
+    label: "Shop",
+    href: "/admin/dashboard/shop",
+    icon: ShoppingBag,
   },
   {
     label: "Podcasts",

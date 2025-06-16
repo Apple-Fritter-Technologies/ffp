@@ -37,38 +37,108 @@ export async function POST(req: NextRequest) {
 
       console.log("Processing completed checkout session:", session.id);
 
-      // Get order ID from metadata
-      const orderId = session.metadata?.orderId;
+      // Get cart data from temporary table
+      const tempSession = await prisma.$queryRaw<Array<{ cart_data: any }>>`
+        SELECT cart_data FROM temp_checkout_sessions WHERE session_id = ${session.id}
+      `;
 
-      if (!orderId) {
-        console.error("No order ID found in session metadata");
+      if (!tempSession || tempSession.length === 0) {
+        console.error("No cart data found for session:", session.id);
         return NextResponse.json(
-          { error: "No order ID in metadata" },
+          { error: "No cart data found" },
           { status: 400 }
         );
       }
 
-      // Update order status and create payment record
+      const cartData = tempSession[0].cart_data;
+
+      // Create order with payment record in transaction
       await prisma.$transaction(async (tx) => {
-        // Update order status
-        await tx.order.update({
-          where: { id: orderId },
+        let shippingAddressId = null;
+
+        // Handle shipping address for physical items
+        if (cartData.hasPhysicalItems && cartData.shippingAddress) {
+          if (cartData.shippingAddress.id) {
+            // Use existing address
+            shippingAddressId = cartData.shippingAddress.id;
+          } else {
+            // Create new address
+            const newAddress = await tx.address.create({
+              data: {
+                userId: cartData.userId,
+                name: cartData.shippingAddress.name,
+                street: cartData.shippingAddress.street,
+                city: cartData.shippingAddress.city,
+                state: cartData.shippingAddress.state,
+                zipCode: cartData.shippingAddress.zipCode,
+                country: cartData.shippingAddress.country || "United States",
+                phone: cartData.shippingAddress.phone,
+              },
+            });
+            shippingAddressId = newAddress.id;
+          }
+        }
+
+        // Create the order
+        const order = await tx.order.create({
           data: {
-            status: "completed",
-            updatedAt: new Date(),
+            userId: cartData.userId,
+            totalPrice: parseFloat(cartData.totalPrice.toString()),
+            hasPhysicalItems: cartData.hasPhysicalItems,
+            shippingAddressId,
+            status: "completed", // Order is created with completed status since payment succeeded
           },
         });
+
+        // Separate items by type
+        const bookItems = cartData.items.filter(
+          (item: any) => item.itemType === "book"
+        );
+        const shopItems = cartData.items.filter(
+          (item: any) => item.itemType === "shop"
+        );
+
+        // Create book order items
+        if (bookItems.length > 0) {
+          await tx.orderItem.createMany({
+            data: bookItems.map((item: any) => ({
+              orderId: order.id,
+              bookId: item.id,
+              quantity: item.quantity,
+              price: parseFloat(item.price.toString()),
+            })),
+          });
+        }
+
+        // Create shop order items
+        if (shopItems.length > 0) {
+          await tx.shopOrderItem.createMany({
+            data: shopItems.map((item: any) => ({
+              orderId: order.id,
+              storeProductId: item.id,
+              quantity: item.quantity,
+              price: parseFloat(item.price.toString()),
+            })),
+          });
+        }
 
         // Create payment record
         await tx.payment.create({
           data: {
-            orderId: orderId,
-            amount: (session.amount_total || 0) / 100, // Convert from cents to dollars
+            orderId: order.id,
+            amount: (session.amount_total || 0) / 100,
             status: "succeeded",
           },
         });
 
-        console.log(`Order ${orderId} marked as completed with payment record`);
+        console.log(
+          `Order ${order.id} created and marked as completed with payment record`
+        );
+
+        // Clean up temporary session data
+        await tx.$executeRaw`
+          DELETE FROM temp_checkout_sessions WHERE session_id = ${session.id}
+        `;
       });
     }
 
@@ -79,33 +149,12 @@ export async function POST(req: NextRequest) {
     ) {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      const orderId = session.metadata?.orderId;
+      // Clean up temporary session data for failed payments
+      await prisma.$executeRaw`
+        DELETE FROM temp_checkout_sessions WHERE session_id = ${session.id}
+      `;
 
-      if (orderId) {
-        await prisma.$transaction(async (tx) => {
-          // Update order status
-          await tx.order.update({
-            where: { id: orderId },
-            data: {
-              status: "cancelled",
-              updatedAt: new Date(),
-            },
-          });
-
-          // Create failed payment record
-          await tx.payment.create({
-            data: {
-              orderId: orderId,
-              amount: (session.amount_total || 0) / 100,
-              status: "failed",
-            },
-          });
-        });
-
-        console.log(
-          `Order ${orderId} marked as cancelled due to failed payment`
-        );
-      }
+      console.log(`Cleaned up failed session data for: ${session.id}`);
     }
 
     return NextResponse.json({ received: true });

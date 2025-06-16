@@ -118,6 +118,8 @@ model StoreProduct {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
+  shopOrderItems ShopOrderItem[]
+
   @@index([isAvailable])
   @@index([productType])
   @@index([createdAt])
@@ -147,9 +149,10 @@ model Order {
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
-  user            User        @relation(fields: [userId], references: [id])
-  shippingAddress Address?    @relation(fields: [shippingAddressId], references: [id])
+  user            User            @relation(fields: [userId], references: [id])
+  shippingAddress Address?        @relation(fields: [shippingAddressId], references: [id])
   orderItems      OrderItem[]
+  shopOrderItems  ShopOrderItem[]
   payment         Payment[]
 
   @@index([userId])
@@ -173,6 +176,22 @@ model OrderItem {
   @@index([orderId])
   @@index([bookId])
   @@map("order_items")
+}
+
+model ShopOrderItem {
+  id             String  @id @default(uuid())
+  orderId        String
+  storeProductId String
+  quantity       Int     @default(1)
+  price          Decimal @db.Decimal(10, 2) // Store price at time of order
+
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  storeProduct StoreProduct @relation(fields: [storeProductId], references: [id])
+
+  @@unique([orderId, storeProductId])
+  @@index([orderId])
+  @@index([storeProductId])
+  @@map("shop_order_items")
 }
 
 model Contact {

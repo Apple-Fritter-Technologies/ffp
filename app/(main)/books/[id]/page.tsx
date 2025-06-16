@@ -334,7 +334,7 @@ const BookDetailPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Enhanced Book Image Section */}
-          <div className="space-y-6 sticky top-32 h-fit">
+          <div className="space-y-6 lg:sticky top-32 h-fit">
             <Card className="overflow-hidden bg-card/70 backdrop-blur-xl border-accent-3/20 shadow-2xl group p-0">
               <div className="relative w-full h-full bg-gradient-to-br from-accent-3/10 to-accent-2/10">
                 <Image
