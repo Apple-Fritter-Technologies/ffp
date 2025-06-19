@@ -12,33 +12,16 @@ import {
   Quote,
   CheckCircle,
   CreditCard,
-  Banknote,
   Handshake,
   Church,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ApiUrl } from "@/lib/utils";
 
 export default function SupportPage() {
-  const [selectedAmount, setSelectedAmount] = React.useState<number | null>(
-    null
-  );
-  const [customAmount, setCustomAmount] = React.useState("");
-  const [donorInfo, setDonorInfo] = React.useState({
-    name: "",
-    email: "",
-    message: "",
-    anonymous: false,
-  });
-
-  const suggestedAmounts = [25, 50, 100, 250, 500, 1000];
-
   const impactAreas = [
     {
       icon: <BookOpen className="w-6 h-6" />,
@@ -89,20 +72,6 @@ export default function SupportPage() {
     },
   ];
 
-  const handleAmountSelect = (amount: number) => {
-    setSelectedAmount(amount);
-    setCustomAmount("");
-  };
-
-  const handleCustomAmountChange = (value: string) => {
-    setCustomAmount(value);
-    setSelectedAmount(null);
-  };
-
-  const getCurrentAmount = () => {
-    return selectedAmount || (customAmount ? parseFloat(customAmount) : 0);
-  };
-
   return (
     <div className="container mx-auto px-4 md:px-6 pb-6 pt-0 bg-background space-y-28">
       {/* Hero Section with Donation CTA */}
@@ -135,7 +104,7 @@ export default function SupportPage() {
 
             <p className="text-lg md:text-xl text-accent-1 max-w-2xl mx-auto leading-relaxed font-light mb-8">
               Your donation directly supports families in building biblical
-              legacies and raising the next generation for God's kingdom.
+              legacies and raising the next generation for God&apos;s kingdom.
             </p>
 
             {/* Primary Donation CTA */}
@@ -390,7 +359,8 @@ export default function SupportPage() {
                 </div>
 
                 <p className="text-xs text-muted-foreground mt-4 italic">
-                  "Every generous act of giving... is from above" - James 1:17
+                  &quot;Every generous act of giving... is from above&quot; -
+                  James 1:17
                 </p>
               </CardContent>
             </Card>
@@ -430,7 +400,7 @@ export default function SupportPage() {
                 <CardContent className="p-8">
                   <Quote className="w-8 h-8 text-accent-2 mb-4" />
                   <p className="text-muted-foreground leading-relaxed mb-6 italic">
-                    "{testimonial.text}"
+                    &quot;{testimonial.text}&quot;
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-accent-2 to-accent-3 rounded-full flex items-center justify-center">
@@ -574,8 +544,8 @@ export default function SupportPage() {
                 Kingdom impact through faithful households.
               </p>
               <p className="text-sm italic max-w-lg mx-auto">
-                "And let us consider how to stir up one another to love and good
-                works." — Hebrews 10:24
+                &quot;And let us consider how to stir up one another to love and
+                good works.&quot; — Hebrews 10:24
               </p>
             </div>
           </div>
