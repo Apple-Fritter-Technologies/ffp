@@ -37,20 +37,27 @@ export async function POST(req: NextRequest) {
 
       console.log("Processing completed checkout session:", session.id);
 
-      // Get cart data from temporary table
-      const tempSession = await prisma.$queryRaw<Array<{ cart_data: any }>>`
-        SELECT cart_data FROM temp_checkout_sessions WHERE session_id = ${session.id}
-      `;
+      // Get cart data from session metadata
+      const cartDataCompressed = session.metadata?.cartDataCompressed;
 
-      if (!tempSession || tempSession.length === 0) {
-        console.error("No cart data found for session:", session.id);
+      if (!cartDataCompressed) {
+        console.error("No cart data found in session metadata:", session.id);
         return NextResponse.json(
           { error: "No cart data found" },
           { status: 400 }
         );
       }
 
-      const cartData = tempSession[0].cart_data;
+      let cartData;
+      try {
+        cartData = JSON.parse(cartDataCompressed);
+      } catch (parseError) {
+        console.error("Failed to parse cart data:", parseError);
+        return NextResponse.json(
+          { error: "Invalid cart data format" },
+          { status: 400 }
+        );
+      }
 
       // Create order with payment record in transaction
       await prisma.$transaction(async (tx) => {
@@ -134,11 +141,6 @@ export async function POST(req: NextRequest) {
         console.log(
           `Order ${order.id} created and marked as completed with payment record`
         );
-
-        // Clean up temporary session data
-        await tx.$executeRaw`
-          DELETE FROM temp_checkout_sessions WHERE session_id = ${session.id}
-        `;
       });
     }
 
@@ -148,13 +150,7 @@ export async function POST(req: NextRequest) {
       event.type === "payment_intent.payment_failed"
     ) {
       const session = event.data.object as Stripe.Checkout.Session;
-
-      // Clean up temporary session data for failed payments
-      await prisma.$executeRaw`
-        DELETE FROM temp_checkout_sessions WHERE session_id = ${session.id}
-      `;
-
-      console.log(`Cleaned up failed session data for: ${session.id}`);
+      console.log(`Payment failed for session: ${session.id}`);
     }
 
     return NextResponse.json({ received: true });

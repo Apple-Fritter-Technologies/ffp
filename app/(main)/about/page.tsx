@@ -102,16 +102,15 @@ export default function About() {
 
             {/* Main Heading */}
             <h1 className="text-6xl md:text-8xl font-bold font-title mb-8 text-background leading-tight">
-              Building
+              Tactical
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-2 to-accent-3">
                 {" "}
-                Legacy
+                Media
               </span>
             </h1>
 
             <p className="text-xl md:text-2xl text-accent-1 max-w-3xl mx-auto leading-relaxed font-light mb-12">
-              Welcome to a place where faith meets action, and legacy begins at
-              home.
+              Deploying Tactical Media to Rebuild Christendom
             </p>
 
             {/* Quick Stats */}
@@ -239,7 +238,16 @@ export default function About() {
               </div>
 
               {/* CTA Button */}
-              <div className="pt-6">
+              <div className="pt-6 flex flex-wrap gap-4 items-center">
+                <Link href="http://bryanfurlong.com/" target="_blank">
+                  <Button
+                    className="group bg-gradient-to-r from-accent-2 to-accent-3 hover:from-accent-3 hover:to-accent-2 text-white font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-accent-2/25"
+                    size="lg"
+                  >
+                    Learn More
+                  </Button>
+                </Link>
+
                 <Link href="/contact">
                   <Button
                     className="group bg-gradient-to-r from-accent-2 to-accent-3 hover:from-accent-3 hover:to-accent-2 text-white font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-accent-2/25"

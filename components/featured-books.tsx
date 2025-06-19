@@ -29,10 +29,10 @@ const FeaturedBooks = ({ books }: FeaturedBooksProps) => {
         </div>
 
         <h3 className="text-5xl md:text-6xl font-bold font-title mb-6">
-          Curated Collection
+          Featured Books
         </h3>
         <p className="text-accent-3 font-light text-xl max-w-2xl mx-auto leading-relaxed">
-          Discover handpicked masterpieces from our literary curators
+          Discover books to rebuild Christendom
         </p>
       </div>
 

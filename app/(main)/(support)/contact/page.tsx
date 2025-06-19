@@ -159,7 +159,7 @@ const ContactPage = () => {
               Contact Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-8">
+          <CardContent className="space-y-8 flex flex-col justify-between h-full">
             <div className="flex items-start gap-4">
               <div className="flex items-center justify-center w-10 h-10 bg-accent-2/20 rounded-lg backdrop-blur-sm border border-accent-2/30 flex-shrink-0">
                 <Mail className="w-5 h-5 text-accent-2" />
@@ -169,10 +169,10 @@ const ContactPage = () => {
                   Email
                 </h4>
                 <Link
-                  href="mailto:contact@ffp-books.com"
+                  href="mailto:contact@furlongfieldpress.com"
                   className="text-background text-lg hover:text-accent-2 transition-colors"
                 >
-                  contact@ffp-books.com
+                  contact@furlongfieldpress.com
                 </Link>
               </div>
             </div>
@@ -186,49 +186,15 @@ const ContactPage = () => {
                   Phone
                 </h4>
                 <Link
-                  href="tel:+15551234567"
+                  href="tel:+14079061664"
                   className="text-background text-lg hover:text-accent-2 transition-colors"
                 >
-                  +1 (555) 123-4567
+                  +1 (407) 906-1664
                 </Link>
               </div>
             </div>
 
-            <div className="flex items-start gap-4">
-              <div className="flex items-center justify-center w-10 h-10 bg-accent-2/20 rounded-lg backdrop-blur-sm border border-accent-2/30 flex-shrink-0">
-                <MapPin className="w-5 h-5 text-accent-2" />
-              </div>
-              <div>
-                <h4 className="text-sm font-medium text-accent-3 mb-1">
-                  Location
-                </h4>
-                <p className="text-background text-lg">
-                  123 Bookshelf Avenue,
-                  <br />
-                  Literary District, CA 90210
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="flex items-center justify-center w-10 h-10 bg-accent-2/20 rounded-lg backdrop-blur-sm border border-accent-2/30 flex-shrink-0">
-                <Clock className="w-5 h-5 text-accent-2" />
-              </div>
-              <div>
-                <h4 className="text-sm font-medium text-accent-3 mb-1">
-                  Hours
-                </h4>
-                <p className="text-background text-lg">
-                  Monday - Friday: 9am - 6pm
-                  <br />
-                  Saturday: 10am - 4pm
-                  <br />
-                  Sunday: Closed
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-8 border-t border-accent-3/20">
+            <div className="pt-8 border-t border-accent-3/20 mt-auto">
               <h4 className="text-xl font-bold text-background mb-4">
                 Follow Us
               </h4>
@@ -248,7 +214,7 @@ const ContactPage = () => {
 
                 <Link
                   key="spotify"
-                  href="https://open.spotify.com/show/1Uwr4ufas7"
+                  href="https://open.spotify.com/show/6pDkgVvBl4ojOyQYS1BuWl?si=1759b75a7d534dc0"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center w-10 h-10 bg-background/10 hover:bg-accent-2/20 rounded-lg backdrop-blur-sm border border-accent-3/30 transition-colors"
@@ -442,35 +408,6 @@ const ContactPage = () => {
             </form>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Map Section */}
-      <div className="mt-20 relative">
-        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-background/10 to-accent-3/10 backdrop-blur-sm px-4 py-2 rounded-full border border-accent-3/20 mb-6">
-          <div className="flex items-center justify-center w-8 h-8 bg-accent-2/20 rounded-lg backdrop-blur-sm border border-accent-2/30">
-            <MapPin className="w-4 h-4 text-accent-2" />
-          </div>
-          <span className="text-accent-3 text-sm font-medium tracking-wide uppercase">
-            Find us
-          </span>
-        </div>
-
-        <h2 className="text-3xl font-bold font-title mb-8">
-          Visit Our Bookstore
-        </h2>
-
-        <div className="h-[500px] w-full relative bg-background/80 backdrop-blur-sm border-accent-3/20 rounded-3xl shadow-xl overflow-hidden">
-          <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d16933385.475800544!2d-87.14049975717533!3d28.102893554738067!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88c1766591562abf%3A0xf72e13d35bc74ed0!2sFlorida%2C%20USA!5e1!3m2!1sen!2sin!4v1749788630233!5m2!1sen!2sin"
-            width="100%"
-            height="100%"
-            style={{ border: 0 }}
-            allowFullScreen={true}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            className="w-full h-full"
-          />
-        </div>
       </div>
 
       {/* FAQ Section */}

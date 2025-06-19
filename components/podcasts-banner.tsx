@@ -17,6 +17,8 @@ import {
   getYouTubeVideoId,
   getYouTubeThumbnail,
 } from "@/lib/utils";
+import Image from "next/image";
+import TrenchesPodcastBanner from "./trenches-podcast-banner";
 
 interface PodcastsBannerProps {
   podcasts: Podcast[];
@@ -31,7 +33,8 @@ const PodcastsBanner = ({ podcasts }: PodcastsBannerProps) => {
   }
 
   const currentVideo = podcasts[currentVideoIndex];
-  const youtubeLink = "https://www.youtube.com/@householdreformationpodcast";
+  const youtubeChannel = "https://www.youtube.com/@householdreformationpodcast";
+
   const videoId = getYouTubeVideoId(currentVideo.videoUrl);
   const thumbnailUrl =
     currentVideo.imageUrl || getYouTubeThumbnail(currentVideo.videoUrl);
@@ -47,7 +50,8 @@ const PodcastsBanner = ({ podcasts }: PodcastsBannerProps) => {
   };
 
   return (
-    <section className="px-4 container mx-auto">
+    <section className="px-4 container mx-auto space-y-8">
+      {/* the household reformation podcast */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-foreground/95 via-foreground/90 to-accent-2/20 backdrop-blur-md">
         {/* Floating Elements */}
         <div className="absolute top-8 right-8 w-32 h-32 bg-gradient-to-br from-accent-2/20 to-accent-3/20 rounded-full blur-2xl animate-pulse"></div>
@@ -62,23 +66,23 @@ const PodcastsBanner = ({ podcasts }: PodcastsBannerProps) => {
                 <Headphones className="w-4 h-4 text-accent-2" />
               </div>
               <span className="text-accent-3 text-sm font-medium tracking-wide uppercase">
-                The Household Reformation
+                The Household Reformation Podcast
               </span>
             </div>
 
             {/* Main Heading */}
             <div className="space-y-6">
               <h2 className="text-4xl md:text-5xl font-bold font-title text-background leading-tight">
-                Reformed Baptist
+                Family Discipleship
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-2 to-accent-3">
                   {" "}
                   Conversations
                 </span>
               </h2>
               <p className="text-white/80 font-light text-lg leading-relaxed max-w-lg">
-                Join us as we seek to shape words and forge culture. Reformed
-                Baptist discussions on rebuilding Christendom, one household at
-                a time.
+                Defying the age. Building the household. Advancing the Kingdom,
+                because we believe the Kingdom runs straight through your living
+                room.
               </p>
             </div>
 
@@ -107,26 +111,77 @@ const PodcastsBanner = ({ podcasts }: PodcastsBannerProps) => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-4 flex-wrap">
-              <Link
-                href={youtubeLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center justify-center gap-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-red-500/25"
-              >
-                <Youtube className="w-5 h-5" />
-                Watch on YouTube
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4 pt-4 flex-wrap">
+                <Link
+                  href={youtubeChannel}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center justify-center gap-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-red-500/25"
+                >
+                  <Youtube className="w-5 h-5" />
+                  Watch on YouTube
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
 
-              <Link
-                href="/podcasts"
-                className="group flex items-center justify-center gap-3 bg-gradient-to-r from-background/10 to-accent-3/10 backdrop-blur-sm border border-accent-2/20 text-background hover:from-accent-2/20 hover:to-accent-3/20 hover:border-accent-2/40 px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105"
-              >
-                <Play className="w-5 h-5" />
-                All Episodes
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
+                <Link
+                  href="/podcasts"
+                  className="group flex items-center justify-center gap-3 bg-gradient-to-r from-background/10 to-accent-3/10 backdrop-blur-sm border border-accent-2/20 text-background hover:from-accent-2/20 hover:to-accent-3/20 hover:border-accent-2/40 px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105"
+                >
+                  <Play className="w-5 h-5" />
+                  All Episodes
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+
+              {/* other channel */}
+              <div className="flex items-center flex-wrap gap-2">
+                <Link
+                  href="https://open.spotify.com/show/6pDkgVvBl4ojOyQYS1BuWl?si=1759b75a7d534dc0"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-all bg-white/10 rounded-xl duration-200 hover:scale-110 hover:-translate-y-0.5 p-2"
+                  aria-label="spotify"
+                >
+                  <Image
+                    src="/images/spotify-icon.svg"
+                    className="w-8 h-8 invert"
+                    alt="Spotify"
+                    width={50}
+                    height={50}
+                  />
+                </Link>
+                <Link
+                  href="https://podcasts.apple.com/us/podcast/the-household-reformation-podcast/id1811690802"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-all bg-white/10 rounded-xl duration-200 hover:scale-110 hover:-translate-y-0.5 p-2"
+                  aria-label="apple podcasts"
+                >
+                  <Image
+                    src="/images/apple-music-icon.svg"
+                    className="w-8 h-8 invert"
+                    alt="Apple Music"
+                    width={50}
+                    height={50}
+                  />
+                </Link>
+                <Link
+                  href="https://bryandfurlong.substack.com/podcast"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-all bg-white/10 rounded-xl duration-200 hover:scale-110 hover:-translate-y-0.5 p-3"
+                  aria-label="substack"
+                >
+                  <Image
+                    src="/images/substack-icon.svg"
+                    className="w-6 h-6 invert"
+                    alt="Substack"
+                    width={50}
+                    height={50}
+                  />
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -336,6 +391,8 @@ const PodcastsBanner = ({ podcasts }: PodcastsBannerProps) => {
           </div>
         </div>
       </div>
+
+      <TrenchesPodcastBanner />
     </section>
   );
 };

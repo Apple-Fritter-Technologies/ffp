@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       orderBy: {
         createdAt: "desc",
       },
-      take: 4,
+      take: 8,
     });
 
     // Fetch books with "bundle" genre

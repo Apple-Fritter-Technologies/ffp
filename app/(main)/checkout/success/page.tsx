@@ -36,13 +36,12 @@ const CheckoutSuccessPage = () => {
           return;
         }
 
+        console.log("Payment details:", paymentResult);
+
         setPaymentDetails(paymentResult);
 
         // Clear cart only after successful payment verification
         clearCart();
-
-        // Clear session storage
-        sessionStorage.removeItem("checkout_session");
 
         toast.success("Payment successful! Your order has been created.");
       } catch (error) {

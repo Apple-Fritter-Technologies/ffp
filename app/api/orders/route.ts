@@ -28,9 +28,11 @@ export async function GET(req: NextRequest) {
               },
             },
           },
-          // Changed from shopOrderItems to shopOrderItems or whatever the correct relation name is
-          // You may need to check your schema for the correct field name
-          // Common alternatives: storeOrderItems, productOrderItems, etc.
+          shopOrderItems: {
+            include: {
+              storeProduct: true,
+            },
+          },
           payment: true,
         },
       });
@@ -66,7 +68,11 @@ export async function GET(req: NextRequest) {
                 },
               },
             },
-            // Remove shopOrderItems temporarily to fix the error
+            shopOrderItems: {
+              include: {
+                storeProduct: true,
+              },
+            },
             payment: true,
           },
           orderBy: {
@@ -88,7 +94,11 @@ export async function GET(req: NextRequest) {
                 },
               },
             },
-            // Remove shopOrderItems temporarily to fix the error
+            shopOrderItems: {
+              include: {
+                storeProduct: true,
+              },
+            },
             payment: true,
           },
           orderBy: {
@@ -327,7 +337,11 @@ export async function PUT(req: NextRequest) {
             },
           },
         },
-        // Remove shopOrderItems temporarily
+        shopOrderItems: {
+          include: {
+            storeProduct: true,
+          },
+        },
         payment: true,
       },
     });

@@ -726,17 +726,19 @@ const BookDetailPage = () => {
 
         {/* Enhanced Related Books Section */}
         <div className="mt-12">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold font-title mb-4">
-              More from{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-2 to-accent-3">
-                {book.genre?.name}
-              </span>
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              Discover more books in this category
-            </p>
-          </div>
+          <Link href={`/books?genre=${book.genreId}`}>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold font-title mb-4">
+                More from{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-2 to-accent-3">
+                  {book.genre?.name}
+                </span>
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Discover more books in this category
+              </p>
+            </div>
+          </Link>
 
           {isRelatedLoading ? (
             <Card className="p-12 bg-card/30 backdrop-blur-sm border-accent-3/20 text-center">

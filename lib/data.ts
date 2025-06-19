@@ -69,9 +69,7 @@ export const navLinks = [
 
 export const footerDiscoverLinks = [
   { name: "All Books", href: "/books" },
-  { name: "Bestsellers", href: "/bestsellers" },
-  { name: "New Releases", href: "/new-releases" },
-  { name: "Authors", href: "/authors" },
+  { name: "Founder", href: "http://bryanfurlong.com/" },
 ];
 
 export const footerSupportLinks = [
@@ -133,12 +131,12 @@ export const socialLinks = [
   },
   {
     name: "Facebook",
-    href: "https://facebook.com/bryandfurlong",
+    href: "https://www.facebook.com/share/19PjRFZwKz/",
     icon: Facebook,
   },
   {
     name: "Instagram",
-    href: "https://instagram.com/bryandfurlong",
+    href: "https://www.instagram.com/furlongfieldpress?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
     icon: Instagram,
   },
   {

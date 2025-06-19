@@ -26,9 +26,9 @@ const Footer = () => {
             </Link>
 
             <p className="text-accent-1/90 text-base font-light leading-relaxed max-w-sm">
-              We believe in the power of independent voices and the beauty of
-              well-crafted stories. Our mission is to connect readers with
-              exceptional literature from around the world.
+              A publishing outpost seeking to equip the saints in rebuilding
+              Christendom—one field manual, one household, and one page at a
+              time. Join us in the fight for truth, beauty, and dominion.
             </p>
 
             {/* Social links - moved up for better mobile experience */}
@@ -43,7 +43,7 @@ const Footer = () => {
               ))}
 
               <SocialLink
-                href="https://open.spotify.com/show/1Uwr4ufas7"
+                href="https://open.spotify.com/show/6pDkgVvBl4ojOyQYS1BuWl?si=1759b75a7d534dc0"
                 icon={
                   <Image
                     src="/images/spotify-icon.svg"
@@ -56,7 +56,7 @@ const Footer = () => {
                 label="Spotify"
               />
               <SocialLink
-                href="https://open.spotify.com/show/1Uwr4ufas7"
+                href="https://bryandfurlong.substack.com"
                 icon={
                   <Image
                     src="/images/substack-icon.svg"

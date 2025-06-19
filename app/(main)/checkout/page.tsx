@@ -25,16 +25,12 @@ import {
   Store,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Address, CreateOrderData } from "@/types/interface";
+import { Address } from "@/types/interface";
 import { createPaymentSession } from "@/hooks/actions/payment-action";
-import { createOrder } from "@/hooks/actions/order-action";
 import { getAddresses } from "@/hooks/actions/address-actions";
 import { loadStripe } from "@stripe/stripe-js";
 import { toast } from "sonner";
-import {
-  prepareOrderDataFromCart,
-  getOrderSummary,
-} from "@/lib/checkout-helpers";
+import { getOrderSummary } from "@/lib/checkout-helpers";
 import { getCartItemDisplayInfo } from "@/lib/cart-helpers";
 
 interface ShippingAddress {
@@ -45,11 +41,6 @@ interface ShippingAddress {
   zipCode: string;
   country: string;
   phone: string;
-}
-
-interface OrderResult {
-  id: string;
-  error?: string;
 }
 
 // Load Stripe
@@ -194,7 +185,7 @@ const CheckoutPage = () => {
     setError(null);
 
     try {
-      // Prepare cart data for payment session (don't create order yet)
+      // Prepare cart data for payment session
       const cartData = {
         items: items.map((item) => ({
           id: item.id,
@@ -220,13 +211,13 @@ const CheckoutPage = () => {
                 return addr
                   ? {
                       id: addr.id,
-                      name: addr.name ?? undefined,
-                      street: addr.street ?? undefined,
-                      city: addr.city ?? undefined,
-                      state: addr.state ?? undefined,
-                      zipCode: addr.zipCode ?? undefined,
-                      country: addr.country ?? undefined,
-                      phone: addr.phone ?? undefined,
+                      name: addr.name ?? "",
+                      street: addr.street ?? "",
+                      city: addr.city ?? "",
+                      state: addr.state ?? "",
+                      zipCode: addr.zipCode ?? "",
+                      country: addr.country ?? "United States",
+                      phone: addr.phone ?? "",
                     }
                   : null;
               })()
@@ -242,23 +233,14 @@ const CheckoutPage = () => {
           : null,
       };
 
-      // Create Stripe payment session with cart data (no order creation)
+      // Create Stripe payment session with cart data
       const paymentResult = await createPaymentSession(cartData);
 
       if (paymentResult.error) {
         throw new Error(paymentResult.error);
       }
 
-      // Store cart info in session storage for order creation after payment
-      sessionStorage.setItem(
-        "checkout_session",
-        JSON.stringify({
-          sessionId: paymentResult.sessionId,
-          cartData: cartData,
-        })
-      );
-
-      // Redirect to Stripe Checkout WITHOUT clearing cart
+      // Redirect to Stripe Checkout
       const stripe = await stripePromise;
       if (stripe && paymentResult.sessionId) {
         const { error: stripeError } = await stripe.redirectToCheckout({

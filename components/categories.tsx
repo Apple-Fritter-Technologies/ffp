@@ -41,7 +41,7 @@ const Categories = ({ genres }: CategoriesProps) => {
             Browse by Genre
           </h3>
           <p className="text-white/90 font-light text-lg max-w-2xl mx-auto">
-            Find your perfect literary escape across diverse collections
+            Find resources by your book type
           </p>
         </div>
 

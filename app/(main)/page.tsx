@@ -11,7 +11,7 @@ import { getHomeData } from "@/hooks/actions/home-actions";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { HomeData } from "@/types/interface";
-
+import IntroHero from "@/components/intro-hero";
 export default function Home() {
   const [homeData, setHomeData] = useState<HomeData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,6 +70,7 @@ export default function Home() {
 
   return (
     <div className="space-y-16">
+      <IntroHero />
       <Hero bundleBooks={homeData.bundleBooks} />
       <div className="container mx-auto space-y-16 px-4 md:px-6">
         <FeaturedBooks books={homeData.featuredBooks} />

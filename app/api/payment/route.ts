@@ -33,8 +33,6 @@ export async function POST(req: NextRequest) {
       const clerkUserId =
         auth.user?.clerkId || auth.user.sub || cartData.userId;
 
-      console.log("Attempting to fetch Clerk user with ID:", clerkUserId);
-
       if (!clerkUserId) {
         throw new Error("No Clerk user ID available");
       }
@@ -118,19 +116,19 @@ export async function POST(req: NextRequest) {
       }));
 
     // Add shipping if physical items exist
-    if (cartData.hasPhysicalItems) {
-      lineItems.push({
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: "Shipping",
-            description: "Standard shipping",
-          },
-          unit_amount: 500, // $5.00 shipping
-        },
-        quantity: 1,
-      });
-    }
+    // if (cartData.hasPhysicalItems) {
+    //   lineItems.push({
+    //     price_data: {
+    //       currency: "usd",
+    //       product_data: {
+    //         name: "Shipping",
+    //         description: "Standard shipping",
+    //       },
+    //       unit_amount: 500, // $5.00 shipping
+    //     },
+    //     quantity: 1,
+    //   });
+    // }
 
     // Prepare base session creation parameters
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
@@ -317,6 +315,7 @@ export async function GET(req: NextRequest) {
         customerEmail: session.customer_email,
         amountTotal: session.amount_total,
         currency: session.currency,
+        metadata: session.metadata,
       });
     }
 

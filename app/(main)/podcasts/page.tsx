@@ -31,6 +31,7 @@ import { Podcast } from "@/types/interface";
 import { getPodcasts } from "@/hooks/actions/podcast-actions";
 import { formatTimeAgo, getYouTubeThumbnail } from "@/lib/utils";
 import VideoPlayerModal from "@/components/video-player-modal";
+import TrenchesPodcastBanner from "@/components/trenches-podcast-banner";
 
 const PodcastsPage = () => {
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
@@ -189,10 +190,10 @@ const PodcastsPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 bg-background">
+    <div className="container mx-auto px-4 bg-background pb-6 space-y-12">
       {/* Channel Header */}
       <div className="bg-gradient-to-br from-foreground/95 via-foreground/90 to-accent-2/20 md:p-6 p-4 rounded-3xl">
-        <div className="">
+        <div>
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
             {/* Channel Avatar */}
             <div className="relative">
@@ -271,7 +272,7 @@ const PodcastsPage = () => {
       </div>
 
       {/* Content Section */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-2">
         {/* Search and Filters */}
         <div className="mb-2 space-y-4">
           {/* Search Bar */}
@@ -582,6 +583,8 @@ const PodcastsPage = () => {
           </div>
         )}
       </div>
+
+      <TrenchesPodcastBanner />
 
       {/* Video Player Modal */}
       <VideoPlayerModal
