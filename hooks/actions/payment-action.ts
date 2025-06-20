@@ -4,7 +4,7 @@ import { getSessionToken } from "@/lib/server-utils";
 import { ApiUrl } from "@/lib/utils";
 import axios from "axios";
 
-export const createPaymentSession = async (cartData: any) => {
+export const createPaymentSession = async (orderId: any) => {
   const sessionToken = await getSessionToken();
 
   if (!sessionToken) {
@@ -14,7 +14,7 @@ export const createPaymentSession = async (cartData: any) => {
   try {
     const res = await axios.post(
       `${ApiUrl}/api/payment`,
-      { cartData }, // Send cart data instead of orderId
+      { orderId },
       {
         headers: { Authorization: `Bearer ${sessionToken}` },
       }

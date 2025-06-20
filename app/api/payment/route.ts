@@ -3,7 +3,6 @@ import Stripe from "stripe";
 import prisma from "@/hooks/prisma";
 import { verifySession } from "@/lib/server-utils";
 import { ApiUrl } from "@/lib/utils";
-import { clerkClient } from "@clerk/nextjs/server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -14,93 +13,122 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { cartData } = await req.json();
+    const { orderId } = await req.json();
 
-    if (!cartData || !cartData.items || cartData.items.length === 0) {
+    if (!orderId) {
       return NextResponse.json(
-        { error: "Cart data is required" },
+        { error: "Order ID is required" },
         { status: 400 }
       );
     }
 
-    // Get user data from Clerk
-    let userEmail = "";
-    let userName = "";
-    let userId = "";
+    // Fetch order data from database
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            clerkId: true,
+            email: true,
+            name: true,
+          },
+        },
+        shippingAddress: true,
+        orderItems: {
+          include: {
+            book: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                author: true,
+                imageUrl: true,
+                productType: true,
+                genreId: true,
+              },
+            },
+          },
+        },
+        shopOrderItems: {
+          include: {
+            storeProduct: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                imageUrl: true,
+                productType: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-    try {
-      // Check if we have a clerkId in the auth object
-      const clerkUserId =
-        auth.user?.clerkId || auth.user.sub || cartData.userId;
-
-      if (!clerkUserId) {
-        throw new Error("No Clerk user ID available");
-      }
-
-      const client = await clerkClient();
-      const clerkUser = await client.users.getUser(clerkUserId);
-
-      userEmail = clerkUser.primaryEmailAddress?.emailAddress || "";
-      userName =
-        clerkUser.fullName ||
-        `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
-        "";
-      userId = clerkUser.id;
-    } catch (clerkError) {
-      console.error("Error fetching user from Clerk:", clerkError);
-
-      // Fallback to database user data if available
-      try {
-        const dbQuery: any = {};
-
-        // Try different ways to find the user
-        if (auth.user?.id) {
-          dbQuery.id = auth.user.id;
-        } else if (auth.user?.clerkId) {
-          dbQuery.clerkId = auth.user.clerkId;
-        } else if (cartData.userId) {
-          // Assume cartData.userId might be clerkId
-          dbQuery.clerkId = cartData.userId;
-        } else {
-          throw new Error("No valid user identifier found");
-        }
-
-        console.log("Fallback DB query:", dbQuery);
-
-        const dbUser = await prisma.user.findUnique({
-          where: dbQuery,
-        });
-
-        if (dbUser) {
-          userEmail = dbUser.email || "";
-          userName = dbUser.name || "";
-          userId = dbUser.clerkId || dbUser.id;
-          console.log("Found user in database:", {
-            email: userEmail,
-            name: userName,
-            userId: userId,
-          });
-        } else {
-          console.warn("User not found in database");
-          // We'll proceed with guest checkout
-          userId = cartData.userId || "guest";
-        }
-      } catch (dbError) {
-        console.error("Error fetching user from database:", dbError);
-        // Proceed with guest checkout
-        userId = cartData.userId || "guest";
-      }
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Create line items for Stripe from cart data
+    // Check if user owns this order
+    if (
+      order.userId !== auth.user?.id &&
+      auth.user?.metadata?.role !== "admin"
+    ) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    // Get user data from order
+    const userEmail = order.user.email || "";
+    const userName = order.user.name || "";
+    const userId = order.user.clerkId || order.user.id;
+
+    // Convert order items to line items for Stripe
+    const allItems: any[] = [];
+
+    // Add book items
+    if (order.orderItems) {
+      order.orderItems.forEach((orderItem) => {
+        allItems.push({
+          id: orderItem.book.id,
+          title: orderItem.book.title,
+          description: orderItem.book.description,
+          author: orderItem.book.author,
+          imageUrl: orderItem.book.imageUrl,
+          productType: orderItem.book.productType,
+          genreId: orderItem.book.genreId,
+          price: Number(orderItem.price),
+          quantity: orderItem.quantity,
+          itemType: "book",
+        });
+      });
+    }
+
+    // Add shop items
+    if (order.shopOrderItems) {
+      order.shopOrderItems.forEach((shopOrderItem) => {
+        allItems.push({
+          id: shopOrderItem.storeProduct.id,
+          title: shopOrderItem.storeProduct.title,
+          description: shopOrderItem.storeProduct.description,
+          imageUrl: shopOrderItem.storeProduct.imageUrl,
+          productType: shopOrderItem.storeProduct.productType,
+          price: Number(shopOrderItem.price),
+          quantity: shopOrderItem.quantity,
+          itemType: "shop",
+        });
+      });
+    }
+
+    // Create line items for Stripe from order data
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] =
-      cartData.items.map((item: any) => ({
+      allItems.map((item: any) => ({
         price_data: {
           currency: "usd",
           product_data: {
             name: item.title,
             description: item.description || undefined,
-            images: item.image ? [item.image] : undefined,
+            images: item.imageUrl ? [item.imageUrl] : undefined,
             metadata: {
               itemId: item.id,
               itemType: item.itemType,
@@ -138,18 +166,19 @@ export async function POST(req: NextRequest) {
       success_url: `${ApiUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${ApiUrl}/checkout/cancelled`,
       metadata: {
+        orderId: orderId,
         userId: userId,
         userEmail: userEmail,
-        totalAmount: cartData.totalPrice.toString(),
-        hasPhysicalItems: cartData.hasPhysicalItems.toString(),
-        // Store essential cart info in metadata (Stripe has limits)
-        itemCount: cartData.items.length.toString(),
-        hasBooks: cartData.items
-          .some((item: any) => item.itemType === "book")
-          .toString(),
-        hasShopItems: cartData.items
-          .some((item: any) => item.itemType === "shop")
-          .toString(),
+        totalAmount: order.totalPrice.toString(),
+        hasPhysicalItems: order.hasPhysicalItems.toString(),
+        // Store essential order info in metadata
+        itemCount: allItems.length.toString(),
+        hasBooks:
+          order.orderItems && order.orderItems.length > 0 ? "true" : "false",
+        hasShopItems:
+          order.shopOrderItems && order.shopOrderItems.length > 0
+            ? "true"
+            : "false",
       },
       automatic_tax: {
         enabled: false,
@@ -201,7 +230,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Handle shipping for physical items
-    if (cartData.hasPhysicalItems) {
+    if (order.hasPhysicalItems) {
       sessionParams.shipping_address_collection = {
         allowed_countries: ["US", "CA", "GB", "AU", "IN"],
       };
@@ -230,22 +259,22 @@ export async function POST(req: NextRequest) {
       ];
 
       // Pre-fill shipping address if available
-      if (cartData.shippingAddress && customerId) {
+      if (order.shippingAddress && customerId) {
         try {
           await stripe.customers.update(customerId, {
             shipping: {
-              name: cartData.shippingAddress.name || userName || "",
+              name: order.shippingAddress.name || userName || "",
               address: {
-                line1: cartData.shippingAddress.street || "",
-                city: cartData.shippingAddress.city || "",
-                state: cartData.shippingAddress.state || "",
-                postal_code: cartData.shippingAddress.zipCode || "",
+                line1: order.shippingAddress.street || "",
+                city: order.shippingAddress.city || "",
+                state: order.shippingAddress.state || "",
+                postal_code: order.shippingAddress.zipCode || "",
                 country:
-                  cartData.shippingAddress.country === "United States"
+                  order.shippingAddress.country === "United States"
                     ? "US"
-                    : cartData.shippingAddress.country || "US",
+                    : order.shippingAddress.country || "US",
               },
-              phone: cartData.shippingAddress.phone || undefined,
+              phone: order.shippingAddress.phone || undefined,
             },
           });
         } catch (shippingError) {
@@ -257,14 +286,15 @@ export async function POST(req: NextRequest) {
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    // Store cart data in session metadata (with size limits)
+    // Store order data in session metadata (with size limits)
     try {
       await stripe.checkout.sessions.update(session.id, {
         metadata: {
           ...sessionParams.metadata,
-          cartDataCompressed: JSON.stringify({
+          orderDataCompressed: JSON.stringify({
+            orderId: orderId,
             userId: userId,
-            items: cartData.items.map((item: any) => ({
+            items: allItems.map((item: any) => ({
               id: item.id,
               title: item.title.substring(0, 50),
               price: item.price,
@@ -272,13 +302,13 @@ export async function POST(req: NextRequest) {
               itemType: item.itemType,
               productType: item.productType,
             })),
-            totalPrice: cartData.totalPrice,
-            hasPhysicalItems: cartData.hasPhysicalItems,
-            shippingAddress: cartData.shippingAddress,
+            totalPrice: order.totalPrice,
+            hasPhysicalItems: order.hasPhysicalItems,
+            shippingAddress: order.shippingAddress,
           }).substring(0, 500),
         },
       });
-      console.log("Cart data stored in session metadata");
+      console.log("Order data stored in session metadata");
     } catch (updateError) {
       console.error("Error updating session metadata:", updateError);
     }

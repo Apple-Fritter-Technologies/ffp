@@ -32,6 +32,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { toast } from "sonner";
 import { getOrderSummary } from "@/lib/checkout-helpers";
 import { getCartItemDisplayInfo } from "@/lib/cart-helpers";
+import { createOrder } from "@/hooks/actions/order-action";
 
 interface ShippingAddress {
   name: string;
@@ -41,6 +42,11 @@ interface ShippingAddress {
   zipCode: string;
   country: string;
   phone: string;
+}
+
+interface OrderResult {
+  id: string;
+  error?: string;
 }
 
 // Load Stripe
@@ -233,12 +239,30 @@ const CheckoutPage = () => {
           : null,
       };
 
+      const orderResult: OrderResult = await createOrder(cartData);
+
+      if (orderResult.error) {
+        throw new Error(orderResult.error);
+      }
+
       // Create Stripe payment session with cart data
-      const paymentResult = await createPaymentSession(cartData);
+      const paymentResult = await createPaymentSession(orderResult.id);
 
       if (paymentResult.error) {
         throw new Error(paymentResult.error);
       }
+
+      // Store order info in session storage for success page
+      sessionStorage.setItem(
+        "orderInfo",
+        JSON.stringify({
+          orderId: orderResult.id,
+          items: cartData.items,
+          totalPrice: cartData.totalPrice,
+          shippingAddress: cartData.shippingAddress,
+          sessionId: paymentResult.sessionId,
+        })
+      );
 
       // Redirect to Stripe Checkout
       const stripe = await stripePromise;

@@ -133,10 +133,7 @@ export const createOrder = async (orderData: CreateOrderData) => {
     }
 
     const res = await axios.post(`${ApiUrl}/api/orders`, orderData, {
-      headers: {
-        Authorization: `Bearer ${sessionToken}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${sessionToken}` },
     });
 
     return res.data;

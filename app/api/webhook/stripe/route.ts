@@ -37,111 +37,61 @@ export async function POST(req: NextRequest) {
 
       console.log("Processing completed checkout session:", session.id);
 
-      // Get cart data from session metadata
-      const cartDataCompressed = session.metadata?.cartDataCompressed;
+      // Get order ID from session metadata
+      const orderId = session.metadata?.orderId;
 
-      if (!cartDataCompressed) {
-        console.error("No cart data found in session metadata:", session.id);
+      if (!orderId) {
+        console.error("No order ID found in session metadata:", session.id);
         return NextResponse.json(
-          { error: "No cart data found" },
+          { error: "No order ID found" },
           { status: 400 }
         );
       }
 
-      let cartData;
       try {
-        cartData = JSON.parse(cartDataCompressed);
-      } catch (parseError) {
-        console.error("Failed to parse cart data:", parseError);
+        // Update order status and create payment record in transaction
+        await prisma.$transaction(async (tx) => {
+          // Find the order
+          const order = await tx.order.findUnique({
+            where: { id: orderId },
+          });
+
+          if (!order) {
+            throw new Error(`Order not found: ${orderId}`);
+          }
+
+          // Update order status to completed
+          await tx.order.update({
+            where: { id: orderId },
+            data: {
+              status: "completed",
+            },
+          });
+
+          // Create payment record
+          await tx.payment.create({
+            data: {
+              orderId: orderId,
+              amount: (session.amount_total || 0) / 100,
+              status: "succeeded",
+            },
+          });
+
+          console.log(
+            `Order ${orderId} marked as completed with payment record`
+          );
+        });
+      } catch (transactionError) {
+        console.error("Transaction failed:", {
+          error: transactionError,
+          sessionId: session.id,
+          orderId: orderId,
+        });
         return NextResponse.json(
-          { error: "Invalid cart data format" },
-          { status: 400 }
+          { error: "Failed to update order" },
+          { status: 500 }
         );
       }
-
-      // Create order with payment record in transaction
-      await prisma.$transaction(async (tx) => {
-        let shippingAddressId = null;
-
-        // Handle shipping address for physical items
-        if (cartData.hasPhysicalItems && cartData.shippingAddress) {
-          if (cartData.shippingAddress.id) {
-            // Use existing address
-            shippingAddressId = cartData.shippingAddress.id;
-          } else {
-            // Create new address
-            const newAddress = await tx.address.create({
-              data: {
-                userId: cartData.userId,
-                name: cartData.shippingAddress.name,
-                street: cartData.shippingAddress.street,
-                city: cartData.shippingAddress.city,
-                state: cartData.shippingAddress.state,
-                zipCode: cartData.shippingAddress.zipCode,
-                country: cartData.shippingAddress.country || "United States",
-                phone: cartData.shippingAddress.phone,
-              },
-            });
-            shippingAddressId = newAddress.id;
-          }
-        }
-
-        // Create the order
-        const order = await tx.order.create({
-          data: {
-            userId: cartData.userId,
-            totalPrice: parseFloat(cartData.totalPrice.toString()),
-            hasPhysicalItems: cartData.hasPhysicalItems,
-            shippingAddressId,
-            status: "completed", // Order is created with completed status since payment succeeded
-          },
-        });
-
-        // Separate items by type
-        const bookItems = cartData.items.filter(
-          (item: any) => item.itemType === "book"
-        );
-        const shopItems = cartData.items.filter(
-          (item: any) => item.itemType === "shop"
-        );
-
-        // Create book order items
-        if (bookItems.length > 0) {
-          await tx.orderItem.createMany({
-            data: bookItems.map((item: any) => ({
-              orderId: order.id,
-              bookId: item.id,
-              quantity: item.quantity,
-              price: parseFloat(item.price.toString()),
-            })),
-          });
-        }
-
-        // Create shop order items
-        if (shopItems.length > 0) {
-          await tx.shopOrderItem.createMany({
-            data: shopItems.map((item: any) => ({
-              orderId: order.id,
-              storeProductId: item.id,
-              quantity: item.quantity,
-              price: parseFloat(item.price.toString()),
-            })),
-          });
-        }
-
-        // Create payment record
-        await tx.payment.create({
-          data: {
-            orderId: order.id,
-            amount: (session.amount_total || 0) / 100,
-            status: "succeeded",
-          },
-        });
-
-        console.log(
-          `Order ${order.id} created and marked as completed with payment record`
-        );
-      });
     }
 
     // Handle failed payment
@@ -151,6 +101,39 @@ export async function POST(req: NextRequest) {
     ) {
       const session = event.data.object as Stripe.Checkout.Session;
       console.log(`Payment failed for session: ${session.id}`);
+
+      // Get order ID from session metadata
+      const orderId = session.metadata?.orderId;
+
+      if (orderId) {
+        try {
+          // Update order status to cancelled
+          await prisma.order.update({
+            where: { id: orderId },
+            data: {
+              status: "cancelled",
+            },
+          });
+
+          // Create payment record with failed status
+          await prisma.payment.create({
+            data: {
+              orderId: orderId,
+              amount: (session.amount_total || 0) / 100,
+              status: "failed",
+            },
+          });
+
+          console.log(
+            `Order ${orderId} marked as cancelled due to payment failure`
+          );
+        } catch (error) {
+          console.error(
+            "Failed to update order status for failed payment:",
+            error
+          );
+        }
+      }
     }
 
     return NextResponse.json({ received: true });
