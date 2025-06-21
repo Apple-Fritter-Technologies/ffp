@@ -20,21 +20,21 @@ export async function GET(req: NextRequest) {
     const unreadMessages = await prisma.contact.count({
       where: { isRead: false },
     });
-    const totalRevenue = await prisma.order
+    const totalRevenue = await prisma.payment
       .aggregate({
-        _sum: { totalPrice: true },
+        _sum: { amount: true },
         where: {
-          status: "completed", // Only count completed orders for revenue
+          status: "succeeded", // Only count successful payments for revenue
         },
       })
-      .then((result) => result._sum.totalPrice || 0);
-    const monthlyRevenue = await prisma.order
+      .then((result) => result._sum.amount || 0);
+    const monthlyRevenue = await prisma.payment
       .groupBy({
         by: ["createdAt"],
-        _sum: { totalPrice: true },
+        _sum: { amount: true },
         orderBy: { createdAt: "asc" },
         where: {
-          status: "completed", // Only count completed orders
+          status: "succeeded", // Only count successful payments
           createdAt: {
             gte: new Date(new Date().setMonth(new Date().getMonth() - 6)), // Last 6 months
           },
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       .then((results) =>
         results.map((item) => ({
           month: item.createdAt.toISOString().slice(0, 7), // Format as YYYY-MM
-          revenue: item._sum.totalPrice || 0,
+          revenue: item._sum.amount || 0,
         }))
       );
 
@@ -109,6 +109,58 @@ export async function GET(req: NextRequest) {
         return booksWithSales.filter((book) => book.id); // Remove any null books
       });
 
+    // Get payment statistics
+    const totalPayments = await prisma.payment.count();
+    const successfulPayments = await prisma.payment.count({
+      where: { status: "succeeded" },
+    });
+    const failedPayments = await prisma.payment.count({
+      where: { status: "failed" },
+    });
+    const pendingPayments = await prisma.payment.count({
+      where: { status: "pending" },
+    });
+
+    // Get order status breakdown
+    const pendingOrders = await prisma.order.count({
+      where: { status: "pending" },
+    });
+    const processingOrders = await prisma.order.count({
+      where: { status: "processing" },
+    });
+    const shippedOrders = await prisma.order.count({
+      where: { status: "shipped" },
+    });
+    const completedOrders = await prisma.order.count({
+      where: { status: "completed" },
+    });
+    const cancelledOrders = await prisma.order.count({
+      where: { status: "cancelled" },
+    });
+
+    // Get orders that need fulfillment (pending + processing)
+    const ordersNeedingFulfillment = pendingOrders + processingOrders;
+
+    // Get orders with physical items that need shipping
+    const ordersNeedingShipping = await prisma.order.count({
+      where: {
+        hasPhysicalItems: true,
+        status: {
+          in: ["pending", "processing"],
+        },
+      },
+    });
+
+    // Calculate average order value
+    const averageOrderValue =
+      totalOrders > 0
+        ? await prisma.order
+            .aggregate({
+              _avg: { totalPrice: true },
+            })
+            .then((result) => result._avg.totalPrice || 0)
+        : 0;
+
     return NextResponse.json(
       {
         totalBooks,
@@ -122,6 +174,18 @@ export async function GET(req: NextRequest) {
         totalRevenue,
         monthlyRevenue,
         topSellingBooks,
+        totalPayments,
+        successfulPayments,
+        failedPayments,
+        pendingPayments,
+        pendingOrders,
+        processingOrders,
+        shippedOrders,
+        completedOrders,
+        cancelledOrders,
+        ordersNeedingFulfillment,
+        ordersNeedingShipping,
+        averageOrderValue,
       },
       { status: 200 }
     );

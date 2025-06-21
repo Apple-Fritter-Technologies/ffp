@@ -1,11 +1,14 @@
 import {
+  ArrowRightLeft,
   Book,
   Bookmark,
   BookOpenIcon,
+  CreditCard,
   Facebook,
   Home,
   Instagram,
   Mail,
+  Megaphone,
   MessageCircleIcon,
   Mic,
   Package,
@@ -121,6 +124,16 @@ export const adminNavItems = [
     href: "/admin/dashboard/messages",
     icon: Mail,
   },
+  {
+    label: "Newsletter",
+    href: "/admin/dashboard/newsletter",
+    icon: Megaphone,
+  },
+  {
+    label: "Transactions",
+    href: "/admin/dashboard/transactions",
+    icon: ArrowRightLeft,
+  },
 ];
 
 export const socialLinks = [
@@ -195,6 +208,12 @@ export const quickActions = [
     href: "/admin/dashboard/orders",
     icon: ShoppingCartIcon,
     color: "bg-purple-500/10 text-purple-500",
+  },
+  {
+    label: "Transactions",
+    href: "/admin/dashboard/transactions",
+    icon: CreditCard,
+    color: "bg-emerald-500/10 text-emerald-500",
   },
   {
     label: "Messages",

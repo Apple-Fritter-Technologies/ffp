@@ -69,3 +69,26 @@ export const getPaymentBySessionId = async (sessionId: string) => {
 export const getPaymentsByOrderId = async (orderId: string) => {
   return getPaymentDetails(undefined, orderId);
 };
+
+export const getAllPayments = async () => {
+  const sessionToken = await getSessionToken();
+
+  if (!sessionToken) {
+    return { error: "Unauthorized" };
+  }
+
+  try {
+    const res = await axios.get(`${ApiUrl}/api/payment/all`, {
+      headers: { Authorization: `Bearer ${sessionToken}` },
+    });
+
+    return res.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      return {
+        error: error.response?.data?.error || "Failed to fetch payments",
+      };
+    }
+    return { error: "Failed to fetch payments" };
+  }
+};

@@ -2,6 +2,7 @@
 
 import BookCard from "@/components/bookCard";
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,12 +29,21 @@ import { getBooks } from "@/hooks/actions/book-actions";
 import { getGenres } from "@/hooks/actions/genres-actions";
 
 const BooksPage = () => {
+  const searchParams = useSearchParams();
   const [books, setBooks] = useState<Book[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
+
+  // Check URL parameters for genre filtering
+  useEffect(() => {
+    const genreParam = searchParams.get("genres");
+    if (genreParam) {
+      setSelectedGenre(genreParam);
+    }
+  }, [searchParams]);
 
   // Fetch books and genres
   const fetchData = async () => {
@@ -84,8 +94,20 @@ const BooksPage = () => {
       book.genre?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       book.author?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesGenre =
-      selectedGenre === "all" || book.genreId === selectedGenre;
+    let matchesGenre = false;
+
+    if (selectedGenre === "all") {
+      matchesGenre = true;
+    } else if (selectedGenre === "bundle") {
+      // Special case: filter by genre name exactly matching "bundle"
+      matchesGenre = book.genre?.name?.toLowerCase() === "bundle" || false;
+    } else {
+      // Regular case: filter by genre ID or genre name match
+      matchesGenre =
+        book.genreId === selectedGenre ||
+        book.genre?.name?.toLowerCase() === selectedGenre.toLowerCase() ||
+        false;
+    }
 
     // Only show available books
     const isAvailable = book.isAvailable;
@@ -95,15 +117,29 @@ const BooksPage = () => {
 
   // Get book count for each genre (only available books)
   const getBookCount = (genreId: string) => {
-    if (genreId === "all")
+    if (genreId === "all") {
       return books.filter((book) => book.isAvailable).length;
-    return books.filter((book) => book.genreId === genreId && book.isAvailable)
-      .length;
+    } else if (genreId === "bundle") {
+      return books.filter(
+        (book) =>
+          book.isAvailable &&
+          (book.genre?.name?.toLowerCase() === "bundle" || false)
+      ).length;
+    } else {
+      return books.filter(
+        (book) =>
+          book.isAvailable &&
+          (book.genreId === genreId ||
+            book.genre?.name?.toLowerCase() === genreId.toLowerCase() ||
+            false)
+      ).length;
+    }
   };
 
   // Navigation buttons with dynamic categories
   const navigationButtons = [
     { label: "All Books", value: "all", icon: Sparkles },
+    { label: "Bundle", value: "bundle", icon: Hash },
     ...genres.map((genre) => ({
       label: genre.name,
       value: genre.id,

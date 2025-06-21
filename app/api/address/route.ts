@@ -103,6 +103,8 @@ export async function POST(req: NextRequest) {
       isDefault,
     } = addressData;
 
+    console.log("Received address data:", addressData);
+
     // Validate required fields
     if (!userId || !name || !street || !city || !state || !zipCode) {
       return NextResponse.json(
@@ -121,7 +123,7 @@ export async function POST(req: NextRequest) {
 
     // Verify user exists
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { clerkId: userId },
     });
 
     if (!user) {
@@ -131,7 +133,7 @@ export async function POST(req: NextRequest) {
     // If this is set as default, unset all other default addresses for this user
     if (isDefault) {
       await prisma.address.updateMany({
-        where: { userId },
+        where: { userId: user.id },
         data: { isDefault: false },
       });
     }
@@ -139,7 +141,7 @@ export async function POST(req: NextRequest) {
     // Create new address
     const newAddress = await prisma.address.create({
       data: {
-        userId,
+        userId: user.id,
         name,
         street,
         city,

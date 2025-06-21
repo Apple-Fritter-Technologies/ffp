@@ -102,6 +102,7 @@ export function CartButton() {
             {items.length}
           </Badge>
         </div>
+
         <div className="space-y-3">
           {items.map((item, index) => {
             const displayInfo = getCartItemDisplayInfo(item);

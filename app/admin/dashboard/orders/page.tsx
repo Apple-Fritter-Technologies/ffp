@@ -33,19 +33,35 @@ import { toast } from "sonner";
 import OrderModal from "../../components/order-modal";
 import { Order, OrderStatus } from "@/types/interface";
 
-import { formatDate, getStatusBadgeVariant, getStatusColor } from "@/lib/utils";
+import {
+  formatDate,
+  getStatusBadgeVariant,
+  getStatusColor,
+  getStatusIcon,
+  formatPrice,
+} from "@/lib/utils";
 import { getOrders, getOrdersByStatus } from "@/hooks/actions/order-action";
 
 const DashboardOrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [open, setOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  // Fetch orders
+  // Helper function to check if payment is completed
+  const isPaymentCompleted = (order: Order) => {
+    return (
+      order.payment &&
+      order.payment.length > 0 &&
+      order.payment.some((payment) =>
+        ["succeeded", "paid", "complete"].includes(payment.status.toLowerCase())
+      )
+    );
+  };
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
@@ -85,7 +101,17 @@ const DashboardOrdersPage = () => {
       order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesSearch;
+    const matchesPaymentFilter =
+      paymentFilter === "all" ||
+      (paymentFilter === "paid" && isPaymentCompleted(order)) ||
+      (paymentFilter === "pending" &&
+        order.payment &&
+        order.payment.length > 0 &&
+        !isPaymentCompleted(order)) ||
+      (paymentFilter === "no-payment" &&
+        (!order.payment || order.payment.length === 0));
+
+    return matchesSearch && matchesPaymentFilter;
   });
 
   // Loading state
@@ -172,6 +198,20 @@ const DashboardOrdersPage = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center space-x-2">
+              <Filter className="w-4 h-4" />
+              <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by payment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Payments</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="pending">Payment Pending</SelectItem>
+                  <SelectItem value="no-payment">No Payment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="rounded-md border">
@@ -182,6 +222,7 @@ const DashboardOrdersPage = () => {
                   <TableHead>Customer</TableHead>
                   <TableHead>Items</TableHead>
                   <TableHead>Total</TableHead>
+                  <TableHead>Payment</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
@@ -199,6 +240,8 @@ const DashboardOrdersPage = () => {
                       (sum, item) => sum + item.quantity,
                       0
                     ) || 0);
+
+                  const StatusIcon = getStatusIcon(order.status);
 
                   return (
                     <TableRow key={order.id}>
@@ -222,8 +265,43 @@ const DashboardOrdersPage = () => {
                       </TableCell>
                       <TableCell>
                         <span className="font-medium">
-                          ${Number(order.totalPrice).toFixed(2)}
+                          {formatPrice(Number(order.totalPrice))}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {order.payment && order.payment.length > 0 ? (
+                          <div className="space-y-1">
+                            <Badge
+                              variant={
+                                isPaymentCompleted(order)
+                                  ? "default"
+                                  : "destructive"
+                              }
+                              className={
+                                isPaymentCompleted(order)
+                                  ? "bg-green-100 text-green-800 border-green-200"
+                                  : "bg-red-100 text-red-800 border-red-200"
+                              }
+                            >
+                              {isPaymentCompleted(order) ? "Paid" : "Pending"}
+                            </Badge>
+                            <div className="text-xs text-muted-foreground">
+                              {formatPrice(
+                                order.payment.reduce(
+                                  (sum, p) => sum + Number(p.amount),
+                                  0
+                                )
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="bg-gray-100 text-gray-800"
+                          >
+                            No Payment
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-1">
@@ -242,7 +320,18 @@ const DashboardOrdersPage = () => {
                           variant={getStatusBadgeVariant(order.status)}
                           className={getStatusColor(order.status)}
                         >
-                          {order.status.toUpperCase()}
+                          <StatusIcon className="w-3 h-3 mr-1" />
+                          {order.status === "completed"
+                            ? "Completed"
+                            : order.status === "processing"
+                            ? "Processing"
+                            : order.status === "shipped"
+                            ? "Shipped"
+                            : order.status === "cancelled"
+                            ? "Cancelled"
+                            : order.status === "pending"
+                            ? "Pending"
+                            : String(order.status).toUpperCase()}
                         </Badge>
                       </TableCell>
                       <TableCell>

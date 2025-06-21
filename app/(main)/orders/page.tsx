@@ -354,17 +354,45 @@ const OrdersPage = () => {
                         Placed on {formatDate(order.createdAt)}
                       </CardDescription>
                     </div>
-                    <Badge className={getStatusColor(order.status)}>
-                      <Icon className="h-4 w-4 mr-1" />
-                      <span className="ml-1 capitalize">{order.status}</span>
-                    </Badge>
+                    <div className="flex flex-col gap-2 items-end">
+                      <Badge className={getStatusColor(order.status)}>
+                        <Icon className="h-4 w-4 mr-1" />
+                        <span className="ml-1 capitalize">{order.status}</span>
+                      </Badge>
+                      {/* Payment Status Badge */}
+                      {order.payment && order.payment.length > 0 ? (
+                        <Badge
+                          variant={
+                            isPaymentCompleted(order)
+                              ? "default"
+                              : "destructive"
+                          }
+                          className={
+                            isPaymentCompleted(order)
+                              ? "bg-green-100 text-green-800 border-green-200"
+                              : "bg-red-100 text-red-800 border-red-200"
+                          }
+                        >
+                          {isPaymentCompleted(order)
+                            ? "Paid"
+                            : "Payment Pending"}
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="bg-gray-100 text-gray-800"
+                        >
+                          No Payment Info
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
 
                 <CardContent>
                   <div className="space-y-4">
                     {/* Order Summary */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                       <div className="flex items-center space-x-2">
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                         <div>
@@ -389,9 +417,39 @@ const OrdersPage = () => {
                       <div className="flex items-center space-x-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <div>
-                          <p className="text-sm font-medium">Updated</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDate(order.updatedAt)}
+                          <p className="text-sm font-medium">Order Status</p>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {order.status === "completed"
+                              ? "Completed ✓"
+                              : order.status === "processing"
+                              ? "Processing..."
+                              : order.status === "shipped"
+                              ? "Shipped 📦"
+                              : order.status === "cancelled"
+                              ? "Cancelled ❌"
+                              : order.status === "pending"
+                              ? "Pending ⏳"
+                              : order.status}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Payment</p>
+                          <p
+                            className={`text-sm ${
+                              isPaymentCompleted(order)
+                                ? "text-green-600 font-medium"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {order.payment && order.payment.length > 0
+                              ? isPaymentCompleted(order)
+                                ? "Completed ✓"
+                                : "Pending"
+                              : "No Payment"}
                           </p>
                         </div>
                       </div>
@@ -407,7 +465,7 @@ const OrdersPage = () => {
                           <p className="text-sm text-muted-foreground">
                             {orderSummary.hasPhysicalItems
                               ? orderSummary.hasDigitalItems
-                                ? "Mixed (Physical + Digital)"
+                                ? "Mixed Items"
                                 : "Physical Items"
                               : "Digital Only"}
                           </p>
@@ -415,30 +473,59 @@ const OrdersPage = () => {
                       </div>
                     </div>
 
-                    {/* Payment Status */}
+                    {/* Enhanced Payment Status Section */}
                     {order.payment && order.payment.length > 0 && (
-                      <div className="flex items-center space-x-2">
-                        <Badge
-                          variant={
-                            isPaymentCompleted(order) ? "default" : "secondary"
-                          }
-                          className={
-                            isPaymentCompleted(order)
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }
-                        >
-                          Payment{" "}
-                          {isPaymentCompleted(order) ? "Completed" : "Pending"}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatPrice(
-                            order.payment.reduce(
-                              (sum, p) => sum + Number(p.amount),
-                              0
-                            )
-                          )}
-                        </span>
+                      <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium">
+                            Payment Details
+                          </h4>
+                          <Badge
+                            variant={
+                              isPaymentCompleted(order)
+                                ? "default"
+                                : "destructive"
+                            }
+                            className={
+                              isPaymentCompleted(order)
+                                ? "bg-green-100 text-green-800 border-green-200"
+                                : "bg-red-100 text-red-800 border-red-200"
+                            }
+                          >
+                            {isPaymentCompleted(order)
+                              ? "Payment Completed"
+                              : "Payment Pending"}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">
+                              Amount Paid:
+                            </span>
+                            <div className="font-medium">
+                              {formatPrice(
+                                order.payment.reduce(
+                                  (sum, p) => sum + Number(p.amount),
+                                  0
+                                )
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">
+                              Payment Status:
+                            </span>
+                            <div
+                              className={`font-medium ${
+                                isPaymentCompleted(order)
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {order.payment.map((p) => p.status).join(", ")}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
 
@@ -601,7 +688,12 @@ const OrdersPage = () => {
                                 <div className="flex justify-between items-center font-medium">
                                   <span>Total:</span>
                                   <span>
-                                    {formatPrice(Number(order.totalPrice))}
+                                    {formatPrice(
+                                      Number(order.totalPrice) +
+                                        (order.hasPhysicalItems
+                                          ? shippingCost
+                                          : 0)
+                                    )}
                                   </span>
                                 </div>
                               </div>

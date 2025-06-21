@@ -51,7 +51,7 @@ const IntroHero = () => {
                 <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Link href="/books?genre=bundle" className="flex-1">
+            <Link href="/books?genres=bundle" className="flex-1">
               <Button
                 variant="outline"
                 className="w-full p-6 text-base font-semibold bg-background/10 border-background/30 text-background hover:bg-background hover:text-foreground transition-all duration-300 rounded-xl"

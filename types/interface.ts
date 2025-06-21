@@ -170,6 +170,18 @@ export interface DashboardData {
   topSellingBooks: (Book & { salesCount: number })[];
   monthlyRevenue: { month: string; revenue: number }[];
   totalRevenue: number;
+  totalPayments: number;
+  successfulPayments: number;
+  failedPayments: number;
+  pendingPayments: number;
+  pendingOrders: number;
+  processingOrders: number;
+  shippedOrders: number;
+  completedOrders: number;
+  cancelledOrders: number;
+  ordersNeedingFulfillment: number;
+  ordersNeedingShipping: number;
+  averageOrderValue: number;
 }
 
 export interface Payment {

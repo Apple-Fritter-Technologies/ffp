@@ -20,6 +20,7 @@ import {
 } from "@clerk/nextjs";
 import { Button } from "./ui/button";
 import { CartButton } from "./cart/cart-button";
+import { SearchModal } from "./search-modal";
 
 interface NavLinkProps {
   href: string;
@@ -140,12 +141,7 @@ const Navbar = () => {
 
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center space-x-6">
-            <Link
-              href="/search"
-              className="text-accent-2 hover:text-accent-1 transition-colors"
-            >
-              <Search />
-            </Link>
+            <SearchModal />
 
             <CartButton />
 
@@ -165,12 +161,13 @@ const Navbar = () => {
 
           {/* Mobile Actions */}
           <div className="flex lg:hidden items-center gap-6">
-            <Link
-              href="/search"
-              className="text-accent-2 hover:text-accent-1 transition-colors"
-            >
-              <Search className="w-5 h-5" />
-            </Link>
+            <SearchModal
+              trigger={
+                <button className="text-accent-2 hover:text-accent-1 transition-colors">
+                  <Search className="w-5 h-5" />
+                </button>
+              }
+            />
             <Link
               href="/cart"
               className="text-accent-2 hover:text-accent-1 transition-colors relative"

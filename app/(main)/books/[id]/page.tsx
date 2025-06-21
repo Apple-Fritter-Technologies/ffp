@@ -312,7 +312,7 @@ const BookDetailPage = () => {
             </Link>
             <div className="w-1 h-1 rounded-full bg-accent-3/50" />
             <Link
-              href={`/books?genre=${book.genreId}`}
+              href={`/books?genres=${book.genreId}`}
               className="text-accent-3 hover:text-accent-2 transition-all duration-200 font-medium"
             >
               {book.genre?.name}
@@ -726,7 +726,7 @@ const BookDetailPage = () => {
 
         {/* Enhanced Related Books Section */}
         <div className="mt-12">
-          <Link href={`/books?genre=${book.genreId}`}>
+          <Link href={`/books?genres=${book.genreId}`}>
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold font-title mb-4">
                 More from{" "}
@@ -778,7 +778,7 @@ const BookDetailPage = () => {
           {relatedBooks.length > 8 && (
             <div className="text-center mt-8">
               <Button asChild variant="outline" size="lg" className="group">
-                <Link href={`/books?genre=${book.genreId}`}>
+                <Link href={`/books?genres=${book.genreId}`}>
                   View More {book.genre?.name} Books
                   <ArrowLeft className="w-4 h-4 ml-2 rotate-180 group-hover:translate-x-1 transition-transform duration-200" />
                 </Link>
