@@ -218,7 +218,7 @@ export function SearchModal({ trigger }: SearchModalProps) {
               {results.total === 0 && (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">
-                    No results found for "{query}"
+                    No results found for &quot;{query}&quot;
                   </p>
                 </div>
               )}

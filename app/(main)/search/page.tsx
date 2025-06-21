@@ -97,7 +97,7 @@ const SearchPage = () => {
             <div className="mb-6">
               <p className="text-muted-foreground">
                 Found {results.total} result{results.total !== 1 ? "s" : ""} for
-                "{searchParams.get("q")}"
+                &quot;{searchParams.get("q")}&quot;
               </p>
             </div>
 
@@ -240,7 +240,7 @@ const SearchPage = () => {
                 {results.total === 0 && (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground text-lg">
-                      No results found for "{searchParams.get("q")}"
+                      No results found for &quot;{searchParams.get("q")}&quot;
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">
                       Try adjusting your search terms or browse our categories
