@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get the user data from Clerk using the clerkClient
+    // Get the user data from Clerk using the clerkClient (outside transaction)
     let clerkUser;
     try {
       const client = await clerkClient();
@@ -270,7 +270,7 @@ export async function POST(req: NextRequest) {
       clerkId: clerkUser.id,
     });
 
-    // Check if user exists in database, create if not
+    // Check if user exists in database, create if not (outside transaction)
     let user = await prisma.user.findUnique({
       where: { clerkId: clerkUser.id },
     });
@@ -306,7 +306,7 @@ export async function POST(req: NextRequest) {
 
     let shippingAddressId = null;
 
-    // Handle shipping address for physical items
+    // Handle shipping address for physical items (outside transaction)
     if (hasPhysicalItems) {
       if (!shippingAddress) {
         return NextResponse.json(
@@ -367,10 +367,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Create order with order items in a transaction
-    const order = await prisma.$transaction(async (tx) => {
+    // Create order with order items in a transaction (optimized to only include atomic operations)
+    const createdOrder = await prisma.$transaction(async (tx) => {
       // Create the order
-      const createdOrder = await tx.order.create({
+      const order = await tx.order.create({
         data: {
           userId: user.id,
           totalPrice,
@@ -384,7 +384,7 @@ export async function POST(req: NextRequest) {
       if (bookItems && bookItems.length > 0) {
         await tx.orderItem.createMany({
           data: bookItems.map((item: any) => ({
-            orderId: createdOrder.id,
+            orderId: order.id,
             bookId: item.id,
             quantity: item.quantity,
             price: item.price,
@@ -396,7 +396,7 @@ export async function POST(req: NextRequest) {
       if (shopItems && shopItems.length > 0) {
         await tx.shopOrderItem.createMany({
           data: shopItems.map((item: any) => ({
-            orderId: createdOrder.id,
+            orderId: order.id,
             storeProductId: item.id,
             quantity: item.quantity,
             price: item.price,
@@ -404,48 +404,50 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Return order with all related data
-      return await tx.order.findUnique({
-        where: { id: createdOrder.id },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
+      return order;
+    });
+
+    // Fetch the complete order with all relations (outside transaction)
+    const order = await prisma.order.findUnique({
+      where: { id: createdOrder.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
           },
-          shippingAddress: true,
-          orderItems: {
-            include: {
-              book: {
-                select: {
-                  id: true,
-                  title: true,
-                  author: true,
-                  imageUrl: true,
-                  productType: true,
-                  downloadUrl: true,
-                },
-              },
-            },
-          },
-          shopOrderItems: {
-            include: {
-              storeProduct: {
-                select: {
-                  id: true,
-                  title: true,
-                  imageUrl: true,
-                  productType: true,
-                  downloadUrl: true,
-                },
-              },
-            },
-          },
-          payment: true,
         },
-      });
+        shippingAddress: true,
+        orderItems: {
+          include: {
+            book: {
+              select: {
+                id: true,
+                title: true,
+                author: true,
+                imageUrl: true,
+                productType: true,
+                downloadUrl: true,
+              },
+            },
+          },
+        },
+        shopOrderItems: {
+          include: {
+            storeProduct: {
+              select: {
+                id: true,
+                title: true,
+                imageUrl: true,
+                productType: true,
+                downloadUrl: true,
+              },
+            },
+          },
+        },
+        payment: true,
+      },
     });
 
     console.log("Created order:", order);

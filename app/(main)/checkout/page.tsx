@@ -30,9 +30,14 @@ import { createPaymentSession } from "@/hooks/actions/payment-action";
 import { getAddresses } from "@/hooks/actions/address-actions";
 import { loadStripe } from "@stripe/stripe-js";
 import { toast } from "sonner";
-import { getOrderSummary } from "@/lib/checkout-helpers";
+import {
+  getSeparateOrderSummaries,
+  preparePhysicalOrderData,
+  prepareDigitalOrderData,
+} from "@/lib/checkout-helpers";
 import { getCartItemDisplayInfo } from "@/lib/cart-helpers";
 import { createOrder } from "@/hooks/actions/order-action";
+import { formatPrice } from "@/lib/utils";
 
 interface ShippingAddress {
   name: string;
@@ -55,7 +60,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 const CheckoutPage = () => {
   const {
     items,
-    totalPrice,
+
     totalItems,
     hasPhysicalItems,
     hasDigitalItems,
@@ -71,7 +76,8 @@ const CheckoutPage = () => {
   const { user, isLoaded } = useUser();
   const router = useRouter();
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPhysicalLoading, setIsPhysicalLoading] = useState(false);
+  const [isDigitalLoading, setIsDigitalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     name: "",
@@ -98,7 +104,7 @@ const CheckoutPage = () => {
   const hasShop = hasShopItems();
 
   // Get order summary for display
-  const orderSummary = getOrderSummary(items);
+  const separateOrderSummaries = getSeparateOrderSummaries(items);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -163,9 +169,10 @@ const CheckoutPage = () => {
   };
 
   const validateForm = () => {
+    // Only validate shipping address if there are physical items
     if (hasPhysical) {
       if ((useDefaultAddress || showAllAddresses) && !selectedAddressId) {
-        setError("Please select a shipping address.");
+        setError("Please select a shipping address for physical items.");
         return false;
       }
 
@@ -173,7 +180,7 @@ const CheckoutPage = () => {
         const requiredFields = ["name", "street", "city", "state", "zipCode"];
         for (const field of requiredFields) {
           if (!shippingAddress[field as keyof ShippingAddress].trim()) {
-            setError(`Please fill in the ${field} field.`);
+            setError(`Please fill in the ${field} field for shipping address.`);
             return false;
           }
         }
@@ -184,16 +191,23 @@ const CheckoutPage = () => {
     return true;
   };
 
-  const handleCheckout = async () => {
+  const handlePhysicalCheckout = async () => {
     if (!validateForm()) return;
 
-    setIsLoading(true);
+    setIsPhysicalLoading(true);
     setError(null);
 
+    console.log("Processing physical checkout for items:", physicalItems);
+
     try {
+      const physicalOrderData = preparePhysicalOrderData(items);
+      if (!physicalOrderData) {
+        throw new Error("No physical items found");
+      }
+
       // Prepare cart data for payment session
       const cartData = {
-        items: items.map((item) => ({
+        items: physicalItems.map((item) => ({
           id: item.id,
           title: item.title,
           price: item.price,
@@ -205,11 +219,15 @@ const CheckoutPage = () => {
           description: item.description,
           genreId: item.genreId,
         })),
-        totalPrice,
-        hasPhysicalItems: hasPhysical,
+        totalPrice: physicalItems.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0
+        ),
+        hasPhysicalItems: true,
         userId: user?.id,
-        shippingAddress: hasPhysical
-          ? useDefaultAddress || showAllAddresses
+        orderType: "physical" as const,
+        shippingAddress:
+          useDefaultAddress || showAllAddresses
             ? (() => {
                 const addr = existingAddresses.find(
                   (addr) => addr.id === selectedAddressId
@@ -235,8 +253,7 @@ const CheckoutPage = () => {
                 zipCode: shippingAddress.zipCode,
                 country: shippingAddress.country,
                 phone: shippingAddress.phone,
-              }
-          : null,
+              },
       };
 
       const orderResult: OrderResult = await createOrder(cartData);
@@ -245,7 +262,6 @@ const CheckoutPage = () => {
         throw new Error(orderResult.error);
       }
 
-      // Create Stripe payment session with cart data
       const paymentResult = await createPaymentSession(orderResult.id);
 
       if (paymentResult.error) {
@@ -261,6 +277,7 @@ const CheckoutPage = () => {
           totalPrice: cartData.totalPrice,
           shippingAddress: cartData.shippingAddress,
           sessionId: paymentResult.sessionId,
+          orderType: "physical",
         })
       );
 
@@ -279,23 +296,103 @@ const CheckoutPage = () => {
         throw new Error("Failed to initialize Stripe");
       }
     } catch (error) {
-      console.error("Checkout error:", error);
+      console.error("Physical checkout error:", error);
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to process checkout. Please try again."
+          : "Failed to process physical order checkout. Please try again."
       );
-      toast.error("Checkout failed. Please try again.");
+      toast.error("Physical order checkout failed. Please try again.");
     } finally {
-      setIsLoading(false);
+      setIsPhysicalLoading(false);
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(price);
+  const handleDigitalCheckout = async () => {
+    setIsDigitalLoading(true);
+    setError(null);
+
+    console.log("Processing digital checkout for items:", digitalItems);
+
+    try {
+      const digitalOrderData = prepareDigitalOrderData(items);
+      if (!digitalOrderData) {
+        throw new Error("No digital items found");
+      }
+
+      // Prepare cart data for payment session
+      const cartData = {
+        items: digitalItems.map((item) => ({
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          quantity: item.quantity,
+          itemType: item.itemType,
+          productType: item.productType,
+          image: item.image,
+          author: item.author,
+          description: item.description,
+          genreId: item.genreId,
+        })),
+        totalPrice: digitalItems.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0
+        ),
+        hasPhysicalItems: false,
+        userId: user?.id,
+        orderType: "digital" as const,
+        shippingAddress: null,
+      };
+
+      const orderResult: OrderResult = await createOrder(cartData);
+
+      if (orderResult.error) {
+        throw new Error(orderResult.error);
+      }
+
+      const paymentResult = await createPaymentSession(orderResult.id);
+
+      if (paymentResult.error) {
+        throw new Error(paymentResult.error);
+      }
+
+      // Store order info in session storage for success page
+      sessionStorage.setItem(
+        "orderInfo",
+        JSON.stringify({
+          orderId: orderResult.id,
+          items: cartData.items,
+          totalPrice: cartData.totalPrice,
+          sessionId: paymentResult.sessionId,
+          orderType: "digital",
+        })
+      );
+
+      // Redirect to Stripe Checkout
+      const stripe = await stripePromise;
+      if (stripe && paymentResult.sessionId) {
+        const { error: stripeError } = await stripe.redirectToCheckout({
+          sessionId: paymentResult.sessionId,
+        });
+
+        if (stripeError) {
+          console.error("Stripe redirect error:", stripeError);
+          setError("Failed to redirect to payment. Please try again.");
+        }
+      } else {
+        throw new Error("Failed to initialize Stripe");
+      }
+    } catch (error) {
+      console.error("Digital checkout error:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to process digital order checkout. Please try again."
+      );
+      toast.error("Digital order checkout failed. Please try again.");
+    } finally {
+      setIsDigitalLoading(false);
+    }
   };
 
   const renderProductTypeIcon = (
@@ -385,7 +482,7 @@ const CheckoutPage = () => {
                   updateQuantity(item.id, item.quantity - 1, item.itemType)
                 }
                 className="h-7 w-7 p-0"
-                disabled={isLoading}
+                disabled={isPhysicalLoading || isDigitalLoading}
               >
                 <Minus className="h-3 w-3" />
               </Button>
@@ -399,7 +496,7 @@ const CheckoutPage = () => {
                   updateQuantity(item.id, item.quantity + 1, item.itemType)
                 }
                 className="h-7 w-7 p-0"
-                disabled={isLoading}
+                disabled={isPhysicalLoading || isDigitalLoading}
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -413,7 +510,7 @@ const CheckoutPage = () => {
                 size="sm"
                 onClick={() => removeItem(item.id, item.itemType)}
                 className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                disabled={isLoading}
+                disabled={isPhysicalLoading || isDigitalLoading}
               >
                 <Trash2 className="h-3 w-3" />
               </Button>
@@ -597,7 +694,7 @@ const CheckoutPage = () => {
                             setShowAllAddresses(false);
                           }
                         }}
-                        disabled={isLoading}
+                        disabled={isPhysicalLoading || isDigitalLoading}
                       />
                       <Label
                         htmlFor="use-default"
@@ -627,7 +724,7 @@ const CheckoutPage = () => {
                             setUseDefaultAddress(false);
                           }
                         }}
-                        disabled={isLoading}
+                        disabled={isPhysicalLoading || isDigitalLoading}
                       />
                       <Label htmlFor="show-all-addresses">
                         Choose from all saved addresses
@@ -651,7 +748,7 @@ const CheckoutPage = () => {
                                 handleAddressSelection(e.target.value)
                               }
                               className="w-4 h-4 mt-1"
-                              disabled={isLoading}
+                              disabled={isPhysicalLoading || isDigitalLoading}
                             />
                             <Label
                               htmlFor={address.id}
@@ -702,7 +799,7 @@ const CheckoutPage = () => {
                             handleAddressChange("name", e.target.value)
                           }
                           placeholder="Enter full name"
-                          disabled={isLoading}
+                          disabled={isPhysicalLoading || isDigitalLoading}
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -714,7 +811,7 @@ const CheckoutPage = () => {
                             handleAddressChange("street", e.target.value)
                           }
                           placeholder="Enter street address"
-                          disabled={isLoading}
+                          disabled={isPhysicalLoading || isDigitalLoading}
                         />
                       </div>
                       <div>
@@ -726,7 +823,7 @@ const CheckoutPage = () => {
                             handleAddressChange("city", e.target.value)
                           }
                           placeholder="Enter city"
-                          disabled={isLoading}
+                          disabled={isPhysicalLoading || isDigitalLoading}
                         />
                       </div>
                       <div>
@@ -738,7 +835,7 @@ const CheckoutPage = () => {
                             handleAddressChange("state", e.target.value)
                           }
                           placeholder="Enter state"
-                          disabled={isLoading}
+                          disabled={isPhysicalLoading || isDigitalLoading}
                         />
                       </div>
                       <div>
@@ -750,7 +847,7 @@ const CheckoutPage = () => {
                             handleAddressChange("zipCode", e.target.value)
                           }
                           placeholder="Enter ZIP code"
-                          disabled={isLoading}
+                          disabled={isPhysicalLoading || isDigitalLoading}
                         />
                       </div>
                       <div>
@@ -762,7 +859,7 @@ const CheckoutPage = () => {
                             handleAddressChange("phone", e.target.value)
                           }
                           placeholder="Enter phone number"
-                          disabled={isLoading}
+                          disabled={isPhysicalLoading || isDigitalLoading}
                         />
                       </div>
                     </div>
@@ -773,161 +870,263 @@ const CheckoutPage = () => {
           )}
         </div>
 
-        {/* Right Column - Order Summary */}
+        {/* Right Column - Separate Order Summaries */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Order Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span>Subtotal ({totalItems} items)</span>
-                  <span>{formatPrice(totalPrice)}</span>
-                </div>
+          {/* Physical Items Order Summary */}
+          {separateOrderSummaries.physical && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Package className="h-5 w-5 text-green-500" />
+                  <span>Physical Items Order</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span>
+                      Subtotal ({separateOrderSummaries.physical.totalItems}{" "}
+                      items)
+                    </span>
+                    <span>
+                      {formatPrice(separateOrderSummaries.physical.totalValue)}
+                    </span>
+                  </div>
 
-                {/* Enhanced breakdown by type */}
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  {orderSummary.hasBooks && (
-                    <div className="flex justify-between">
-                      <span className="flex items-center space-x-1">
-                        <BookOpen className="h-3 w-3" />
-                        <span>
-                          Books ({orderSummary.categories.books.count})
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    {separateOrderSummaries.physical.hasBooks && (
+                      <div className="flex justify-between">
+                        <span className="flex items-center space-x-1">
+                          <BookOpen className="h-3 w-3" />
+                          <span>
+                            Books (
+                            {
+                              separateOrderSummaries.physical.categories.books
+                                .count
+                            }
+                            )
+                          </span>
                         </span>
-                      </span>
-                      <span>
-                        {formatPrice(orderSummary.categories.books.value)}
-                      </span>
-                    </div>
-                  )}
-                  {orderSummary.hasShopProducts && (
-                    <div className="flex justify-between">
-                      <span className="flex items-center space-x-1">
-                        <Store className="h-3 w-3" />
                         <span>
-                          Shop Items ({orderSummary.categories.shop.count})
+                          {formatPrice(
+                            separateOrderSummaries.physical.categories.books
+                              .value
+                          )}
                         </span>
-                      </span>
-                      <span>
-                        {formatPrice(orderSummary.categories.shop.value)}
-                      </span>
-                    </div>
-                  )}
+                      </div>
+                    )}
+                    {separateOrderSummaries.physical.hasShopProducts && (
+                      <div className="flex justify-between">
+                        <span className="flex items-center space-x-1">
+                          <Store className="h-3 w-3" />
+                          <span>
+                            Shop Items (
+                            {
+                              separateOrderSummaries.physical.categories.shop
+                                .count
+                            }
+                            )
+                          </span>
+                        </span>
+                        <span>
+                          {formatPrice(
+                            separateOrderSummaries.physical.categories.shop
+                              .value
+                          )}
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
-                  {/* Physical vs Digital breakdown */}
-                  {hasPhysical && (
-                    <div className="flex justify-between">
-                      <span className="flex items-center space-x-1">
-                        <Package className="h-3 w-3" />
-                        <span>
-                          Physical ({orderSummary.physicalItemsCount})
-                        </span>
-                      </span>
-                      <span>
-                        {formatPrice(
-                          physicalItems.reduce(
-                            (sum, item) => sum + item.price * item.quantity,
-                            0
-                          )
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  {hasDigital && (
-                    <div className="flex justify-between">
-                      <span className="flex items-center space-x-1">
-                        <Download className="h-3 w-3" />
-                        <span>Digital ({orderSummary.digitalItemsCount})</span>
-                      </span>
-                      <span>
-                        {formatPrice(
-                          digitalItems.reduce(
-                            (sum, item) => sum + item.price * item.quantity,
-                            0
-                          )
-                        )}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {hasPhysical && (
                   <div className="flex justify-between text-sm">
                     <span>Shipping</span>
                     <span className="text-green-600">$5.00</span>
                   </div>
-                )}
 
-                <Separator />
-                <div className="flex justify-between font-semibold text-lg">
-                  <span>Total</span>
-                  <span>{formatPrice(totalPrice + (hasPhysical ? 5 : 0))}</span>
+                  <Separator />
+                  <div className="flex justify-between font-semibold text-lg">
+                    <span>Total</span>
+                    <span>
+                      {formatPrice(
+                        separateOrderSummaries.physical.totalValue + 5
+                      )}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Enhanced Order Type Info */}
-              <div className="space-y-2 pt-4">
-                {orderSummary.hasBooks && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <BookOpen className="h-4 w-4" />
-                    <span>
-                      {orderSummary.bookCount} book
-                      {orderSummary.bookCount !== 1 ? "s" : ""} in your order
-                    </span>
-                  </div>
-                )}
-                {orderSummary.hasShopProducts && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Store className="h-4 w-4" />
-                    <span>
-                      {orderSummary.shopCount} shop item
-                      {orderSummary.shopCount !== 1 ? "s" : ""} in your order
-                    </span>
-                  </div>
-                )}
-                {hasPhysical && (
+                <div className="space-y-2 pt-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Package className="h-4 w-4" />
                     <span>Physical items will be shipped to your address</span>
                   </div>
+                </div>
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
-                {hasDigital && (
+
+                <Button
+                  onClick={handlePhysicalCheckout}
+                  disabled={isPhysicalLoading || isDigitalLoading}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isPhysicalLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <CreditCard className="h-4 w-4 mr-2" />
+                  )}
+                  {isPhysicalLoading
+                    ? "Processing Physical Order..."
+                    : "Checkout Physical Items"}
+                </Button>
+
+                <p className="text-xs text-muted-foreground text-center">
+                  You will be redirected to Stripe to complete your payment
+                  securely.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Digital Items Order Summary */}
+          {separateOrderSummaries.digital && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Download className="h-5 w-5 text-blue-500" />
+                  <span>Digital Items Order</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span>
+                      Subtotal ({separateOrderSummaries.digital.totalItems}{" "}
+                      items)
+                    </span>
+                    <span>
+                      {formatPrice(separateOrderSummaries.digital.totalValue)}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    {separateOrderSummaries.digital.hasBooks && (
+                      <div className="flex justify-between">
+                        <span className="flex items-center space-x-1">
+                          <BookOpen className="h-3 w-3" />
+                          <span>
+                            Books (
+                            {
+                              separateOrderSummaries.digital.categories.books
+                                .count
+                            }
+                            )
+                          </span>
+                        </span>
+                        <span>
+                          {formatPrice(
+                            separateOrderSummaries.digital.categories.books
+                              .value
+                          )}
+                        </span>
+                      </div>
+                    )}
+                    {separateOrderSummaries.digital.hasShopProducts && (
+                      <div className="flex justify-between">
+                        <span className="flex items-center space-x-1">
+                          <Store className="h-3 w-3" />
+                          <span>
+                            Shop Items (
+                            {
+                              separateOrderSummaries.digital.categories.shop
+                                .count
+                            }
+                            )
+                          </span>
+                        </span>
+                        <span>
+                          {formatPrice(
+                            separateOrderSummaries.digital.categories.shop.value
+                          )}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+                  <div className="flex justify-between font-semibold text-lg">
+                    <span>Total</span>
+                    <span>
+                      {formatPrice(separateOrderSummaries.digital.totalValue)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Download className="h-4 w-4" />
                     <span>
                       Digital items will be available for immediate download
                     </span>
                   </div>
+                </div>
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
-              </div>
 
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+                <Button
+                  onClick={handleDigitalCheckout}
+                  disabled={isPhysicalLoading || isDigitalLoading}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isDigitalLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <CreditCard className="h-4 w-4 mr-2" />
+                  )}
+                  {isDigitalLoading
+                    ? "Processing Digital Order..."
+                    : "Checkout Digital Items"}
+                </Button>
 
-              <Button
-                onClick={handleCheckout}
-                disabled={isLoading}
-                className="w-full"
-                size="lg"
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <CreditCard className="h-4 w-4 mr-2" />
-                )}
-                {isLoading ? "Processing..." : "Proceed to Payment"}
-              </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  You will be redirected to Stripe to complete your payment
+                  securely.
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
-              <p className="text-xs text-muted-foreground text-center">
-                You will be redirected to Stripe to complete your payment
-                securely.
-              </p>
-            </CardContent>
-          </Card>
+          {/* Information Card if both types exist */}
+          {separateOrderSummaries.physical &&
+            separateOrderSummaries.digital && (
+              <Card className="border-amber-200 bg-amber-50">
+                <CardContent className="pt-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="rounded-full bg-amber-100 p-2">
+                      <Package className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-amber-800">
+                        Separate Checkout Required
+                      </p>
+                      <p className="text-sm text-amber-700">
+                        Physical and digital items require separate payment
+                        processing. Please complete both checkouts to receive
+                        all your items.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
         </div>
       </div>
     </div>

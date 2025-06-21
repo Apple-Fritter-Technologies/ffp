@@ -1,3 +1,4 @@
+import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/store/use-cart";
 import { Book, ProductType } from "@/types/interface";
 import { Plus, Download, Star } from "lucide-react";
@@ -23,17 +24,9 @@ function BookCard({ book }: { book: Book }) {
       author: book.author || undefined,
       description: book.description || undefined,
       productType: book.productType,
+      itemType: "book",
     });
     toast.success(`${book.title} added to cart!`);
-  };
-
-  // Format price display
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-    }).format(price);
   };
 
   return (

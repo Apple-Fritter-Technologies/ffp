@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { getCartItemDisplayInfo } from "@/lib/cart-helpers";
+import { formatPrice } from "@/lib/utils";
 
 export function CartButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -42,13 +43,6 @@ export function CartButton() {
     hasBookItems,
     hasShopItems,
   } = useCart();
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(price);
-  };
 
   const handleCheckout = () => {
     setIsOpen(false);
@@ -109,12 +103,12 @@ export function CartButton() {
           </Badge>
         </div>
         <div className="space-y-3">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const displayInfo = getCartItemDisplayInfo(item);
 
             return (
               <div
-                key={`${item.id}-${item.itemType}`}
+                key={index}
                 className="flex items-center space-x-3 p-3 border rounded-lg bg-muted/30"
               >
                 {item.image && (

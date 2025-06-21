@@ -18,7 +18,8 @@ import {
   deleteContact,
 } from "@/hooks/actions/contact-actions";
 import { Contact } from "@/types/interface";
-import { formatDistanceToNow } from "date-fns";
+import { formatDateDistanceToNow } from "@/lib/utils";
+import Link from "next/link";
 
 interface ContactModalProps {
   open: boolean;
@@ -42,13 +43,6 @@ const ContactModal: React.FC<ContactModalProps> = ({
       setIsStatusChanged(true);
     }
   }, [open, contactData?.id]);
-
-  // Format the date
-  const formatDate = (date?: Date | string) => {
-    if (!date) return "Unknown date";
-    const parsedDate = typeof date === "string" ? new Date(date) : date;
-    return formatDistanceToNow(parsedDate, { addSuffix: true });
-  };
 
   const handleReadStatus = async (isRead: boolean) => {
     if (!contactData?.id) return;
@@ -124,12 +118,16 @@ const ContactModal: React.FC<ContactModalProps> = ({
             <span className="flex items-center gap-1">
               <User className="w-3 h-3" /> {contactData.name}
             </span>
-            <span className="flex items-center gap-1">
+            <Link
+              href={`mailto:${contactData.email}`}
+              target="_blank"
+              className="flex items-center gap-1"
+            >
               <AtSign className="w-3 h-3" /> {contactData.email}
-            </span>
+            </Link>
             <span className="flex items-center gap-1">
               <CalendarIcon className="w-3 h-3" />{" "}
-              {formatDate(contactData.createdAt)}
+              {formatDateDistanceToNow(contactData.createdAt)}
             </span>
           </DialogDescription>
         </DialogHeader>

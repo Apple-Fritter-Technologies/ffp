@@ -33,7 +33,7 @@ import { toast } from "sonner";
 import OrderModal from "../../components/order-modal";
 import { Order, OrderStatus } from "@/types/interface";
 
-import { formatDate } from "@/lib/utils";
+import { formatDate, getStatusBadgeVariant, getStatusColor } from "@/lib/utils";
 import { getOrders, getOrdersByStatus } from "@/hooks/actions/order-action";
 
 const DashboardOrdersPage = () => {
@@ -77,38 +77,6 @@ const DashboardOrdersPage = () => {
   const handleViewOrder = (order: Order) => {
     setSelectedOrder(order);
     setOpen(true);
-  };
-
-  const getStatusBadgeVariant = (status: OrderStatus) => {
-    switch (status) {
-      case "completed":
-        return "default";
-      case "processing":
-        return "secondary";
-      case "shipped":
-        return "outline";
-      case "cancelled":
-        return "destructive";
-      case "pending":
-      default:
-        return "secondary";
-    }
-  };
-
-  const getStatusColor = (status: OrderStatus) => {
-    switch (status) {
-      case "completed":
-        return "text-green-600";
-      case "processing":
-        return "text-blue-600";
-      case "shipped":
-        return "text-purple-600";
-      case "cancelled":
-        return "text-red-600";
-      case "pending":
-      default:
-        return "text-yellow-600";
-    }
   };
 
   const filteredOrders = orders?.filter((order) => {
@@ -222,10 +190,15 @@ const DashboardOrdersPage = () => {
               </TableHeader>
               <TableBody>
                 {filteredOrders?.map((order) => {
-                  const totalItems = order.orderItems?.reduce(
-                    (sum, item) => sum + item.quantity,
-                    0
-                  );
+                  const totalItems =
+                    (order.orderItems?.reduce(
+                      (sum, item) => sum + item.quantity,
+                      0
+                    ) || 0) +
+                    (order.shopOrderItems?.reduce(
+                      (sum, item) => sum + item.quantity,
+                      0
+                    ) || 0);
 
                   return (
                     <TableRow key={order.id}>

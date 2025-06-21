@@ -20,6 +20,7 @@ import {
   ClockIcon,
   DollarSignIcon,
   TrendingUpIcon,
+  StoreIcon,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDashboardStats } from "@/hooks/actions/dashboard-actions";
@@ -43,7 +44,9 @@ export default function DashboardPage() {
   const stats = [
     {
       title: "Total Revenue",
-      value: data?.totalRevenue ? `$${data.totalRevenue}` : 0,
+      value: data?.totalRevenue
+        ? `$${Number(data.totalRevenue).toFixed(2)}`
+        : "$0.00",
       description: "Total earnings",
       icon: <DollarSignIcon size={20} />,
       color: "bg-emerald-500/10 text-emerald-500",
@@ -89,6 +92,13 @@ export default function DashboardPage() {
       description: "Audio content",
       icon: <MicIcon size={20} />,
       color: "bg-red-500/10 text-red-500",
+    },
+    {
+      title: "Store Products",
+      value: data?.totalStoreProducts || 0,
+      description: "Shop items",
+      icon: <StoreIcon size={20} />,
+      color: "bg-indigo-500/10 text-indigo-500",
     },
   ];
 
@@ -238,9 +248,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                {data.monthlyRevenue.map((item) => (
+                {data.monthlyRevenue.map((item, index) => (
                   <div
-                    key={item.month}
+                    key={index}
                     className="text-center p-3 rounded-lg border border-muted bg-card/50"
                   >
                     <div className="text-xs text-muted-foreground mb-1">

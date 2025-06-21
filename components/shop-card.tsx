@@ -1,3 +1,4 @@
+import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/store/use-cart";
 import { StoreProduct, ProductType } from "@/types/interface";
 import { Plus, Download, Package } from "lucide-react";
@@ -27,15 +28,6 @@ function ShopCard({ product }: { product: StoreProduct }) {
       itemType: "shop",
     });
     toast.success(`${product.title} added to cart!`);
-  };
-
-  // Format price display
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-    }).format(price);
   };
 
   return (

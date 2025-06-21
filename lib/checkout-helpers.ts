@@ -122,3 +122,97 @@ export const categorizeCartItems = (cartItems: CartItem[]) => {
     digitalItems: cartItems.filter((item) => item.productType === "digital"),
   };
 };
+
+// Helper to create separate order data for physical and digital items
+export const preparePhysicalOrderData = (
+  cartItems: CartItem[]
+): CreateOrderData | null => {
+  const physicalItems = cartItems.filter(
+    (item) => item.productType === "physical"
+  );
+
+  if (physicalItems.length === 0) return null;
+
+  const bookItems = physicalItems
+    .filter((item) => item.itemType === "book")
+    .map((item) => ({
+      bookId: item.id,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+  const shopItems = physicalItems
+    .filter((item) => item.itemType === "shop")
+    .map((item) => ({
+      storeProductId: item.id,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+  const totalPrice = physicalItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
+  return {
+    bookItems: bookItems.length > 0 ? bookItems : undefined,
+    shopItems: shopItems.length > 0 ? shopItems : undefined,
+    totalPrice,
+    hasPhysicalItems: true,
+    orderType: "physical",
+  };
+};
+
+export const prepareDigitalOrderData = (
+  cartItems: CartItem[]
+): CreateOrderData | null => {
+  const digitalItems = cartItems.filter(
+    (item) => item.productType === "digital"
+  );
+
+  if (digitalItems.length === 0) return null;
+
+  const bookItems = digitalItems
+    .filter((item) => item.itemType === "book")
+    .map((item) => ({
+      bookId: item.id,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+  const shopItems = digitalItems
+    .filter((item) => item.itemType === "shop")
+    .map((item) => ({
+      storeProductId: item.id,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+  const totalPrice = digitalItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
+  return {
+    bookItems: bookItems.length > 0 ? bookItems : undefined,
+    shopItems: shopItems.length > 0 ? shopItems : undefined,
+    totalPrice,
+    hasPhysicalItems: false,
+    orderType: "digital",
+  };
+};
+
+// Helper to get separate order summaries
+export const getSeparateOrderSummaries = (cartItems: CartItem[]) => {
+  const physicalItems = cartItems.filter(
+    (item) => item.productType === "physical"
+  );
+  const digitalItems = cartItems.filter(
+    (item) => item.productType === "digital"
+  );
+
+  return {
+    physical: physicalItems.length > 0 ? getOrderSummary(physicalItems) : null,
+    digital: digitalItems.length > 0 ? getOrderSummary(digitalItems) : null,
+  };
+};

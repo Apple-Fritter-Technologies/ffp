@@ -165,6 +165,7 @@ export interface DashboardData {
   unreadMessages: number;
   totalGenres: number;
   totalPodcasts: number;
+  totalStoreProducts: number;
   recentOrders: Order[];
   topSellingBooks: (Book & { salesCount: number })[];
   monthlyRevenue: { month: string; revenue: number }[];
@@ -194,6 +195,7 @@ export interface CreateOrderData {
   }[];
   totalPrice: number;
   hasPhysicalItems: boolean;
+  orderType?: "physical" | "digital";
   shippingAddress?: {
     id?: string;
     name?: string;

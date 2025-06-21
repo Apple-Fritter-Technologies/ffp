@@ -40,6 +40,7 @@ import {
 // Import components
 import ShopCard from "@/components/shop-card";
 import GridPattern from "@/components/gird-pattern";
+import { formatPrice } from "@/lib/utils";
 
 const ShopDetailPage = () => {
   const params = useParams();
@@ -192,14 +193,6 @@ const ShopDetailPage = () => {
   const toggleWishlist = () => {
     setIsWishlisted(!isWishlisted);
     toast.success(isWishlisted ? "Removed from wishlist" : "Added to wishlist");
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-    }).format(price);
   };
 
   const price =

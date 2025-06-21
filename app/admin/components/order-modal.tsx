@@ -28,11 +28,14 @@ import {
   Loader2,
   Download,
   ShoppingBag,
+  Truck,
 } from "lucide-react";
 import { Order, OrderStatus } from "@/types/interface";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getStatusBadgeVariant, getStatusColor } from "@/lib/utils";
 import { toast } from "sonner";
 import { updateAdminOrderStatus } from "@/hooks/actions/order-action";
+import { downloadItem } from "@/hooks/actions/download-actions";
+import { shippingCost } from "@/lib/constant";
 
 interface OrderModalProps {
   open: boolean;
@@ -51,6 +54,9 @@ const OrderModal: React.FC<OrderModalProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | null>(
     null
   );
+  const [downloadingItems, setDownloadingItems] = useState<Set<string>>(
+    new Set()
+  );
 
   if (!orderData) {
     return null;
@@ -59,6 +65,68 @@ const OrderModal: React.FC<OrderModalProps> = ({
   const handleClose = () => {
     setOpen(false);
     setSelectedStatus(null);
+  };
+
+  // Check if payment is completed/paid
+  const isPaymentPaid =
+    orderData.payment && orderData.payment.length > 0
+      ? orderData.payment.some((payment) => payment.status === "succeeded")
+      : false;
+
+  // Handle digital product download
+  const handleDownload = async (
+    itemId: string,
+    itemTitle: string,
+    itemType: "book" | "shop"
+  ) => {
+    if (!isPaymentPaid) {
+      toast.error("Downloads are only available for paid orders");
+      return;
+    }
+
+    if (!orderData?.id) {
+      toast.error("Order details not available");
+      return;
+    }
+
+    setDownloadingItems((prev) => new Set(prev).add(itemId));
+
+    try {
+      // Use the server action to get the download URL
+      const result = await downloadItem(orderData.id, itemId, itemType);
+
+      if (result.error) {
+        console.error("Download failed:", result.error);
+        toast.error(result.error);
+        return;
+      }
+
+      if (result.success && result.downloadUrl) {
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement("a");
+        link.href = result.downloadUrl;
+        link.download = `${itemTitle}.${result.fileFormat || "file"}`;
+        link.target = "_blank";
+
+        // Append to body, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast.success(`Downloading ${itemTitle}...`);
+      } else {
+        toast.error("Download URL not available");
+      }
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.error("Download failed. Please try again.");
+    } finally {
+      setDownloadingItems((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
+    }
   };
 
   const handleStatusUpdate = async () => {
@@ -85,42 +153,18 @@ const OrderModal: React.FC<OrderModalProps> = ({
     }
   };
 
-  const getStatusBadgeVariant = (status: OrderStatus) => {
-    switch (status) {
-      case "completed":
-        return "default";
-      case "processing":
-        return "secondary";
-      case "shipped":
-        return "outline";
-      case "cancelled":
-        return "destructive";
-      case "pending":
-      default:
-        return "secondary";
-    }
-  };
+  const totalItems =
+    (orderData.orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0) +
+    (orderData.shopOrderItems?.reduce((sum, item) => sum + item.quantity, 0) ||
+      0);
 
-  const getStatusColor = (status: OrderStatus) => {
-    switch (status) {
-      case "completed":
-        return "text-green-600";
-      case "processing":
-        return "text-blue-600";
-      case "shipped":
-        return "text-purple-600";
-      case "cancelled":
-        return "text-red-600";
-      case "pending":
-      default:
-        return "text-yellow-600";
-    }
-  };
-
-  const totalItems = orderData.orderItems?.reduce(
-    (sum, item) => sum + item.quantity,
-    0
-  );
+  const subtotal = Number(orderData.totalPrice);
+  const totalPayments = orderData.payment
+    ? orderData.payment.reduce(
+        (sum, payment) => sum + Number(payment.amount),
+        0
+      )
+    : 0;
 
   return (
     <Dialog
@@ -132,7 +176,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
         setOpen(isOpen);
       }}
     >
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl flex-1 min-w-fit max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Order Details</DialogTitle>
           <DialogDescription>
@@ -145,10 +189,21 @@ const OrderModal: React.FC<OrderModalProps> = ({
           <div className="bg-muted p-6 rounded-lg">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-xl font-semibold">Order #{orderData.id}</h3>
+                <h3 className="text-xl font-semibold">
+                  Order #{orderData.id.slice(-8)}
+                </h3>
+                <p className="text-xs text-muted-foreground font-mono">
+                  Full ID: {orderData.id}
+                </p>
                 <p className="text-sm text-muted-foreground">
                   Created on {formatDate(orderData.createdAt)}
                 </p>
+                {orderData.updatedAt &&
+                  orderData.updatedAt !== orderData.createdAt && (
+                    <p className="text-xs text-muted-foreground">
+                      Last updated: {formatDate(orderData.updatedAt)}
+                    </p>
+                  )}
               </div>
               <Badge
                 variant={getStatusBadgeVariant(orderData.status)}
@@ -158,7 +213,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
               </Badge>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="flex items-center space-x-3">
                 <ShoppingBag className="w-5 h-5 text-muted-foreground" />
                 <div>
@@ -169,20 +224,87 @@ const OrderModal: React.FC<OrderModalProps> = ({
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <CreditCard className="w-5 h-5 text-muted-foreground" />
+                <Package className="w-5 h-5 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">Total Amount</p>
+                  <p className="font-medium">Books</p>
                   <p className="text-sm text-muted-foreground">
-                    ${Number(orderData.totalPrice).toFixed(2)}
+                    {orderData.orderItems?.length || 0} item(s)
                   </p>
                 </div>
               </div>
+              <div className="flex items-center space-x-3">
+                <ShoppingBag className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">Shop Items</p>
+                  <p className="text-sm text-muted-foreground">
+                    {orderData.shopOrderItems?.length || 0} item(s)
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <CreditCard className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">Subtotal</p>
+                  <p className="text-sm text-muted-foreground">
+                    ${subtotal.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Pricing Breakdown */}
+            <div className="bg-muted/30 p-4 rounded-lg">
+              <h5 className="font-medium mb-3">Order Summary</h5>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <ShoppingBag className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm">Subtotal</span>
+                  </div>
+                  <span className="text-sm">${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <Truck className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      Shipping {!orderData.hasPhysicalItems && "(Digital Only)"}
+                    </span>
+                  </div>
+                  <span className="text-sm">
+                    {orderData.hasPhysicalItems
+                      ? `$${shippingCost.toFixed(2)}`
+                      : "FREE"}
+                  </span>
+                </div>
+                <Separator />
+                <div className="flex justify-between items-center font-medium">
+                  <span>Total</span>
+                  <span>${(subtotal + shippingCost).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div className="flex items-center space-x-3">
                 <Package className="w-5 h-5 text-muted-foreground" />
                 <div>
                   <p className="font-medium">Order Type</p>
                   <p className="text-sm text-muted-foreground">
-                    {orderData.hasPhysicalItems ? "Physical" : "Digital"}
+                    {orderData.hasPhysicalItems
+                      ? "Physical Items"
+                      : "Digital Only"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <CreditCard className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">Payment Status</p>
+                  <p className="text-sm text-muted-foreground">
+                    {orderData.payment && orderData.payment.length > 0
+                      ? orderData.payment[0].status.charAt(0).toUpperCase() +
+                        orderData.payment[0].status.slice(1)
+                      : "No payment record"}
                   </p>
                 </div>
               </div>
@@ -251,6 +373,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
           <div className="space-y-4">
             <h4 className="text-lg font-medium">Order Items</h4>
             <div className="space-y-3">
+              {/* Book Items */}
               {orderData.orderItems?.map((item) => (
                 <div
                   key={item.id}
@@ -274,6 +397,9 @@ const OrderModal: React.FC<OrderModalProps> = ({
                         by {item.book?.author || "Unknown"}
                       </p>
                       <div className="flex items-center space-x-2 mt-1">
+                        <Badge variant="outline" className="text-xs">
+                          Book
+                        </Badge>
                         <Badge variant="outline">
                           {item.book?.productType}
                         </Badge>
@@ -296,48 +422,282 @@ const OrderModal: React.FC<OrderModalProps> = ({
                   </div>
                 </div>
               ))}
+
+              {/* Shop Items */}
+              {orderData.shopOrderItems?.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-muted/50 p-4 rounded-lg flex items-center justify-between"
+                >
+                  <div className="flex items-center space-x-4">
+                    {item.storeProduct?.imageUrl ? (
+                      <img
+                        src={item.storeProduct.imageUrl}
+                        alt={item.storeProduct.title}
+                        className="w-16 h-20 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-16 h-20 bg-muted rounded flex items-center justify-center">
+                        <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div>
+                      <h5 className="font-medium">
+                        {item.storeProduct?.title}
+                      </h5>
+                      <p className="text-sm text-muted-foreground">
+                        Store Product
+                      </p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Badge variant="outline" className="text-xs">
+                          Shop
+                        </Badge>
+                        <Badge variant="outline">
+                          {item.storeProduct?.productType}
+                        </Badge>
+                        {item.storeProduct?.productType === "digital" && (
+                          <Download className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">
+                      ${Number(item.price).toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Qty: {item.quantity}
+                    </p>
+                    <p className="text-sm font-medium">
+                      ${(Number(item.price) * item.quantity).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {/* No items message */}
+              {(!orderData.orderItems || orderData.orderItems.length === 0) &&
+                (!orderData.shopOrderItems ||
+                  orderData.shopOrderItems.length === 0) && (
+                  <div className="bg-muted/50 p-4 rounded-lg text-center text-muted-foreground">
+                    No items in this order
+                  </div>
+                )}
             </div>
           </div>
 
           {/* Payment Information */}
-          {orderData.payment && orderData.payment.length > 0 && (
+          {orderData.payment && orderData.payment.length > 0 ? (
             <div className="space-y-4">
               <h4 className="text-lg font-medium">Payment Information</h4>
-              <div className="bg-muted/50 p-4 rounded-lg">
-                {orderData.payment.map((payment) => (
-                  <div
-                    key={payment.id}
-                    className="flex justify-between items-center"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <CreditCard className="w-5 h-5 text-muted-foreground" />
-                      <div>
+              <div className="bg-muted/50 p-4 rounded-lg space-y-4">
+                {orderData.payment.map((payment, index) => (
+                  <div key={payment.id}>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-3">
+                        <CreditCard className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">
+                            Payment #{payment.id.slice(-8)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDate(payment.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
                         <p className="font-medium">
-                          Payment #{payment.id.slice(-8)}
+                          ${Number(payment.amount).toFixed(2)}
                         </p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(payment.createdAt)}
-                        </p>
+                        <Badge
+                          variant={
+                            payment.status === "succeeded"
+                              ? "default"
+                              : payment.status === "failed"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                          className={
+                            payment.status === "succeeded"
+                              ? "text-green-600"
+                              : payment.status === "failed"
+                              ? "text-red-600"
+                              : "text-yellow-600"
+                          }
+                        >
+                          {payment.status.toUpperCase()}
+                        </Badge>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">
-                        ${Number(payment.amount).toFixed(2)}
-                      </p>
-                      <Badge
-                        variant={
-                          payment.status === "succeeded"
-                            ? "default"
-                            : payment.status === "failed"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                      >
-                        {payment.status}
-                      </Badge>
-                    </div>
+                    {index < orderData.payment!.length - 1 && (
+                      <Separator className="mt-4" />
+                    )}
                   </div>
                 ))}
+
+                {/* Payment Summary */}
+                <Separator />
+                <div className="flex justify-between items-center pt-2">
+                  <p className="font-medium">Total Payments:</p>
+                  <p className="font-semibold">${totalPayments.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <h4 className="text-lg font-medium">Payment Information</h4>
+              <div className="bg-muted/50 p-4 rounded-lg text-center">
+                <CreditCard className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-muted-foreground">
+                  No payment records found
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Payment information will appear here once processed
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Digital Downloads */}
+          {(orderData.orderItems?.some(
+            (item) =>
+              item.book?.productType === "digital" && item.book?.downloadUrl
+          ) ||
+            orderData.shopOrderItems?.some(
+              (item) =>
+                item.storeProduct?.productType === "digital" &&
+                item.storeProduct?.downloadUrl
+            )) && (
+            <div className="space-y-4">
+              <h4 className="text-lg font-medium">Digital Downloads</h4>
+              <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                {orderData.orderItems
+                  ?.filter(
+                    (item) =>
+                      item.book?.productType === "digital" &&
+                      item.book?.downloadUrl
+                  )
+                  .map((item) => (
+                    <div
+                      key={`download-${item.id}`}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Download className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">{item.book?.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {item.book?.format && `Format: ${item.book.format}`}
+                            {item.book?.fileSize &&
+                              ` • Size: ${item.book.fileSize}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline">Available</Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={
+                            !isPaymentPaid ||
+                            downloadingItems.has(item.book?.id || "")
+                          }
+                          onClick={() =>
+                            handleDownload(
+                              item.book?.id || "",
+                              item.book?.title || "",
+                              "book"
+                            )
+                          }
+                        >
+                          {downloadingItems.has(item.book?.id || "") ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Downloading...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="w-4 h-4 mr-2" />
+                              Download
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                {orderData.shopOrderItems
+                  ?.filter(
+                    (item) =>
+                      item.storeProduct?.productType === "digital" &&
+                      item.storeProduct?.downloadUrl
+                  )
+                  .map((item) => (
+                    <div
+                      key={`download-${item.id}`}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Download className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">
+                            {item.storeProduct?.title}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {item.storeProduct?.format &&
+                              `Format: ${item.storeProduct.format}`}
+                            {item.storeProduct?.fileSize &&
+                              ` • Size: ${item.storeProduct.fileSize}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline">Available</Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={
+                            !isPaymentPaid ||
+                            downloadingItems.has(item.storeProduct?.id || "")
+                          }
+                          onClick={() =>
+                            handleDownload(
+                              item.storeProduct?.id || "",
+                              item.storeProduct?.title || "",
+                              "shop"
+                            )
+                          }
+                        >
+                          {downloadingItems.has(item.storeProduct?.id || "") ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Downloading...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="w-4 h-4 mr-2" />
+                              Download
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                {!isPaymentPaid && (
+                  <div className="text-center p-4 bg-orange-50 rounded-lg">
+                    <p className="text-sm text-orange-700">
+                      Downloads will be available once payment is confirmed as
+                      successful.
+                    </p>
+                  </div>
+                )}
+
+                {isPaymentPaid && (
+                  <p className="text-xs text-muted-foreground">
+                    Download links will remain active for 30 days from purchase
+                    date.
+                  </p>
+                )}
               </div>
             </div>
           )}

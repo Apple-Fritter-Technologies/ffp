@@ -25,6 +25,7 @@ import {
 } from "@/hooks/actions/order-action";
 import { createPaymentSession } from "@/hooks/actions/payment-action";
 import { toast } from "sonner";
+import { formatDate, formatPrice } from "@/lib/utils";
 
 interface CancelledOrder {
   id: string;
@@ -52,7 +53,7 @@ interface CancelledOrder {
 const CancelledPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isLoaded } = useUser();
+  const { isLoaded } = useUser();
 
   const [order, setOrder] = useState<CancelledOrder | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,51 +66,51 @@ const CancelledPage = () => {
       ? sessionStorage.getItem("checkout_session")
       : null;
 
+  const fetchOrderData = async () => {
+    try {
+      setIsLoading(true);
+
+      // Try to get order ID from session storage first
+      let orderId = null;
+      if (sessionData) {
+        const parsed = JSON.parse(sessionData);
+        orderId = parsed.orderId;
+      }
+
+      // Fallback to URL params if needed
+      if (!orderId) {
+        orderId = searchParams.get("order_id");
+      }
+
+      if (orderId) {
+        const orderResult = await getOrderById(orderId);
+
+        if (orderResult.error) {
+          setError(orderResult.error);
+        } else {
+          setOrder(orderResult);
+
+          // Update order status to cancelled if it's still pending/processing
+          if (
+            orderResult.status === "pending" ||
+            orderResult.status === "processing"
+          ) {
+            await updateOrderStatus(orderId, "cancelled");
+          }
+        }
+      } else {
+        setError("No order ID found");
+      }
+    } catch (error) {
+      console.error("Error fetching order:", error);
+      setError("Failed to load order information");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isLoaded) return;
-
-    const fetchOrderData = async () => {
-      try {
-        setIsLoading(true);
-
-        // Try to get order ID from session storage first
-        let orderId = null;
-        if (sessionData) {
-          const parsed = JSON.parse(sessionData);
-          orderId = parsed.orderId;
-        }
-
-        // Fallback to URL params if needed
-        if (!orderId) {
-          orderId = searchParams.get("order_id");
-        }
-
-        if (orderId) {
-          const orderResult = await getOrderById(orderId);
-
-          if (orderResult.error) {
-            setError(orderResult.error);
-          } else {
-            setOrder(orderResult);
-
-            // Update order status to cancelled if it's still pending/processing
-            if (
-              orderResult.status === "pending" ||
-              orderResult.status === "processing"
-            ) {
-              await updateOrderStatus(orderId, "cancelled");
-            }
-          }
-        } else {
-          setError("No order ID found");
-        }
-      } catch (error) {
-        console.error("Error fetching order:", error);
-        setError("Failed to load order information");
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
     fetchOrderData();
   }, [isLoaded, searchParams, sessionData]);
@@ -184,23 +185,6 @@ const CancelledPage = () => {
       }
     }
     router.push("/books");
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(price);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   if (!isLoaded || isLoading) {

@@ -31,6 +31,7 @@ import {
   updateContactsReadStatus,
 } from "@/hooks/actions/contact-actions";
 import { formatDistanceToNow } from "date-fns";
+import { formatDateDistanceToNow } from "@/lib/utils";
 
 const DashboardContactsPage = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -129,13 +130,6 @@ const DashboardContactsPage = () => {
 
   // Get unread count
   const unreadCount = contacts.filter((contact) => !contact.isRead).length;
-
-  // Format date
-  const formatDate = (date?: Date | string) => {
-    if (!date) return "Unknown";
-    const parsedDate = typeof date === "string" ? new Date(date) : date;
-    return formatDistanceToNow(parsedDate, { addSuffix: true });
-  };
 
   // Truncate text
   const truncateText = (text: string, maxLength: number = 50) => {
@@ -282,7 +276,9 @@ const DashboardContactsPage = () => {
                         {truncateText(contact.message)}
                       </div>
                     </TableCell>
-                    <TableCell>{formatDate(contact.createdAt)}</TableCell>
+                    <TableCell>
+                      {formatDateDistanceToNow(contact.createdAt)}
+                    </TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"

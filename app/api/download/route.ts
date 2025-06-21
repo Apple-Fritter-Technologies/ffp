@@ -1,12 +1,14 @@
 import prisma from "@/hooks/prisma";
-import { verifySession } from "@/lib/server-utils";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
-    // 1. Verify user authentication
-    const auth = await verifySession(req);
-    if (!auth.authorized || !auth.user?.id) {
+    // 1. Verify user authentication using Clerk
+    const { userId } = await auth();
+    const user = await currentUser();
+
+    if (!userId || !user) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
@@ -91,10 +93,10 @@ export async function GET(req: NextRequest) {
     }
 
     // 5. Verify order ownership (user can only download their own orders, unless admin)
-    if (
-      auth.user?.metadata?.role !== "admin" &&
-      order.user.clerkId !== auth.user.sub
-    ) {
+    const isAdmin =
+      user.privateMetadata?.role === "admin" ||
+      user.publicMetadata?.role === "admin";
+    if (!isAdmin && order.user.clerkId !== userId) {
       return NextResponse.json(
         { error: "Access denied. This order does not belong to you." },
         { status: 403 }
@@ -215,8 +217,8 @@ export async function GET(req: NextRequest) {
 
     // 12. Log download attempt for audit purposes
     console.log(`Download initiated:`, {
-      userId: auth.user.id,
-      userClerkId: auth.user.sub,
+      userId: user.id,
+      userClerkId: userId,
       orderId: order.id,
       itemId,
       itemType,

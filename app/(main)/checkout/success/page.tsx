@@ -24,6 +24,7 @@ import { getPaymentBySessionId } from "@/hooks/actions/payment-action";
 import { getOrderById } from "@/hooks/actions/order-action";
 import { downloadItem } from "@/hooks/actions/download-actions";
 import { toast } from "sonner";
+import { formatDate, formatPrice } from "@/lib/utils";
 
 const CheckoutSuccessPage = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +35,7 @@ const CheckoutSuccessPage = () => {
   );
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { clearCart } = useCart();
+  const { clearCart, removeSpecificItems } = useCart();
 
   const sessionId = searchParams.get("session_id");
 
@@ -43,24 +44,6 @@ const CheckoutSuccessPage = () => {
     paymentDetails?.status === "paid" ||
     paymentDetails?.status === "succeeded" ||
     paymentDetails?.status === "complete";
-
-  // Helper functions
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(price);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
   // Separate digital and physical items
   const digitalBooks =
@@ -105,7 +88,7 @@ const CheckoutSuccessPage = () => {
     setDownloadingItems((prev) => new Set(prev).add(itemId));
 
     try {
-      // Use the download action to get the download URL
+      // Use the server action to get the download URL
       const result = await downloadItem(orderDetails.id, itemId, itemType);
 
       if (result.error) {
@@ -115,8 +98,17 @@ const CheckoutSuccessPage = () => {
       }
 
       if (result.success && result.downloadUrl) {
-        // Open download URL in new window/tab to trigger download
-        window.open(result.downloadUrl, "_blank");
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement("a");
+        link.href = result.downloadUrl;
+        link.download = `${itemTitle}.${result.fileFormat || "file"}`;
+        link.target = "_blank";
+
+        // Append to body, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
         toast.success(`Downloading ${itemTitle}...`);
       } else {
         toast.error("Download URL not available");
@@ -172,10 +164,47 @@ const CheckoutSuccessPage = () => {
           console.warn("No order ID found in payment metadata");
         }
 
-        // Clear cart only after successful payment verification
-        clearCart();
+        // Get order info from session storage to determine which items to remove
+        const orderInfo = sessionStorage.getItem("orderInfo");
 
-        toast.success("Payment successful! Your order has been created.");
+        if (orderInfo) {
+          try {
+            const parsedOrderInfo = JSON.parse(orderInfo);
+
+            if (parsedOrderInfo.items && Array.isArray(parsedOrderInfo.items)) {
+              // Remove only the items that were part of this order
+              const itemsToRemove = parsedOrderInfo.items.map((item: any) => ({
+                id: item.id,
+                itemType: item.itemType || "book", // Default to book for backward compatibility
+              }));
+
+              console.log("Removing specific items from cart:", itemsToRemove);
+              console.log("Order type:", parsedOrderInfo.orderType);
+              removeSpecificItems(itemsToRemove);
+
+              // Clear the order info from session storage
+              sessionStorage.removeItem("orderInfo");
+
+              toast.success(
+                `Payment successful! Your ${parsedOrderInfo.orderType} order has been created.`
+              );
+            } else {
+              // Fallback to clearing entire cart if no item info
+              console.log("No item info found, clearing entire cart");
+              clearCart();
+              toast.success("Payment successful! Your order has been created.");
+            }
+          } catch (error) {
+            console.error("Error parsing order info:", error);
+            clearCart();
+            toast.success("Payment successful! Your order has been created.");
+          }
+        } else {
+          // Fallback to clearing entire cart if no order info
+          console.log("No order info in session storage, clearing entire cart");
+          clearCart();
+          toast.success("Payment successful! Your order has been created.");
+        }
       } catch (error) {
         console.error("Error processing success:", error);
         toast.error("An error occurred while processing your order");
@@ -186,7 +215,7 @@ const CheckoutSuccessPage = () => {
     };
 
     handleSuccess();
-  }, [sessionId, clearCart, router]);
+  }, [sessionId, clearCart, removeSpecificItems, router]);
 
   if (isLoading) {
     return (

@@ -60,11 +60,14 @@ export async function POST(req: NextRequest) {
             throw new Error(`Order not found: ${orderId}`);
           }
 
-          // Update order status to completed
+          // Determine order status based on whether it has physical items
+          const newStatus = order.hasPhysicalItems ? "processing" : "completed";
+
+          // Update order status
           await tx.order.update({
             where: { id: orderId },
             data: {
-              status: "completed",
+              status: newStatus,
             },
           });
 
@@ -78,7 +81,7 @@ export async function POST(req: NextRequest) {
           });
 
           console.log(
-            `Order ${orderId} marked as completed with payment record`
+            `Order ${orderId} marked as ${newStatus} with payment record (hasPhysicalItems: ${order.hasPhysicalItems})`
           );
         });
       } catch (transactionError) {
@@ -107,21 +110,24 @@ export async function POST(req: NextRequest) {
 
       if (orderId) {
         try {
-          // Update order status to cancelled
-          await prisma.order.update({
-            where: { id: orderId },
-            data: {
-              status: "cancelled",
-            },
-          });
+          // Update order status to cancelled and create payment record in transaction
+          await prisma.$transaction(async (tx) => {
+            // Update order status to cancelled
+            await tx.order.update({
+              where: { id: orderId },
+              data: {
+                status: "cancelled",
+              },
+            });
 
-          // Create payment record with failed status
-          await prisma.payment.create({
-            data: {
-              orderId: orderId,
-              amount: (session.amount_total || 0) / 100,
-              status: "failed",
-            },
+            // Create payment record with failed status
+            await tx.payment.create({
+              data: {
+                orderId: orderId,
+                amount: (session.amount_total || 0) / 100,
+                status: "failed",
+              },
+            });
           });
 
           console.log(

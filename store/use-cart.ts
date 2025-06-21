@@ -8,6 +8,9 @@ interface CartState {
   totalPrice: number;
   addItem: (item: Omit<CartItem, "quantity">) => void;
   removeItem: (id: string, itemType?: "book" | "shop") => void;
+  removeSpecificItems: (
+    items: { id: string; itemType: "book" | "shop" }[]
+  ) => void;
   updateQuantity: (
     id: string,
     quantity: number,
@@ -92,6 +95,20 @@ export const useCart = create<CartState>()(
                 return !(item.id === id && item.itemType === itemType);
               }
               return item.id !== id;
+            }),
+          }));
+
+          updateTotals();
+        },
+
+        removeSpecificItems: (itemsToRemove) => {
+          set((state) => ({
+            items: state.items.filter((item) => {
+              return !itemsToRemove.some(
+                (removeItem) =>
+                  removeItem.id === item.id &&
+                  removeItem.itemType === item.itemType
+              );
             }),
           }));
 
