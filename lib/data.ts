@@ -67,7 +67,10 @@ export const navLinks = [
   { name: "Shop", href: "/shop" },
   { name: "Podcasts", href: "/podcasts" },
   { name: "Contact", href: "/contact" },
-  { name: "Blog", href: "https://bryandfurlong.substack.com/" },
+  {
+    name: "Blog",
+    href: "https://bryandfurlong.substack.com/",
+  },
 ];
 
 export const footerDiscoverLinks = [

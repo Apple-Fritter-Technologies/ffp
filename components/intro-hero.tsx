@@ -41,22 +41,22 @@ const IntroHero = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 w-full max-w-lg pt-4">
+            <Link href="/books" className="flex-1">
+              <Button className="w-full p-6 text-base font-semibold bg-gradient-to-r from-accent-2 to-accent-3 hover:from-accent-3 hover:to-accent-2 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl group">
+                Browse Books
+                <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
             <Link
               href="http://amazon.com/stores/author/B0F7HFB7YV"
               target="_blank"
               className="flex-1"
             >
-              <Button className="w-full p-6 text-base font-semibold bg-gradient-to-r from-accent-2 to-accent-3 hover:from-accent-3 hover:to-accent-2 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl group">
-                Browse on Amazon
-                <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <Link href="/books?genres=bundle" className="flex-1">
               <Button
                 variant="outline"
                 className="w-full p-6 text-base font-semibold bg-background/10 border-background/30 text-background hover:bg-background hover:text-foreground transition-all duration-300 rounded-xl"
               >
-                View Bundles
+                Buy on Amazon
               </Button>
             </Link>
           </div>

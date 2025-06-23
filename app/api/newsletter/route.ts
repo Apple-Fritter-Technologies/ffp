@@ -1,5 +1,4 @@
 import prisma from "@/hooks/prisma";
-import { verifySession } from "@/lib/server-utils";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -40,12 +39,6 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const auth = await verifySession(req);
-
-    if (!auth.authorized || auth.user?.metadata?.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const newsletterData = await req.json();
     const { email } = newsletterData;
 

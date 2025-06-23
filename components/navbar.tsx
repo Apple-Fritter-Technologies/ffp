@@ -32,6 +32,7 @@ function NavLink({ href, className = "", children }: NavLinkProps) {
   return (
     <Link
       href={href}
+      target={children == "Blog" ? "_blank" : "_self"}
       className={`text-background hover:text-accent-1 transition-colors ${className}`}
     >
       {children}
@@ -122,9 +123,17 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link href="/">
               <Image
-                src="/full-logo.png"
+                src="/logo.png"
                 alt="Furlong Field Press"
-                width={150}
+                className="hidden lg:block"
+                width={200}
+                height={200}
+              />
+              <Image
+                src="/icon.svg"
+                alt="Furlong Field Press"
+                className="block lg:hidden rounded-lg"
+                width={50}
                 height={50}
               />
             </Link>

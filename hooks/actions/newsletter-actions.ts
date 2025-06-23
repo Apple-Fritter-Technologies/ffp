@@ -1,6 +1,5 @@
 "use server";
 
-import { getSessionToken } from "@/lib/server-utils";
 import { ApiUrl } from "@/lib/utils";
 import axios from "axios";
 
@@ -20,20 +19,8 @@ export const getNewsletters = async () => {
 };
 
 export const subscribeToNewsletter = async (email: string) => {
-  const sessionToken = await getSessionToken();
-
-  if (!sessionToken) {
-    return { error: "Unauthorized" };
-  }
-
   try {
-    const res = await axios.post(
-      `${ApiUrl}/api/newsletter`,
-      { email },
-      {
-        headers: { Authorization: `Bearer ${sessionToken}` },
-      }
-    );
+    const res = await axios.post(`${ApiUrl}/api/newsletter`, { email });
 
     return res.data;
   } catch (error: unknown) {
