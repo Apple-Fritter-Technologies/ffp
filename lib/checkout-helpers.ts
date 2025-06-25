@@ -216,3 +216,40 @@ export const getSeparateOrderSummaries = (cartItems: CartItem[]) => {
     digital: digitalItems.length > 0 ? getOrderSummary(digitalItems) : null,
   };
 };
+
+// Helper to create unified order data for all items in cart
+export const prepareUnifiedOrderData = (
+  cartItems: CartItem[]
+): CreateOrderData => {
+  const bookItems = cartItems
+    .filter((item) => item.itemType === "book")
+    .map((item) => ({
+      bookId: item.id,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+  const shopItems = cartItems
+    .filter((item) => item.itemType === "shop")
+    .map((item) => ({
+      storeProductId: item.id,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+  const totalPrice = cartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
+  const hasPhysicalItems = cartItems.some(
+    (item) => item.productType === "physical"
+  );
+
+  return {
+    bookItems: bookItems.length > 0 ? bookItems : undefined,
+    shopItems: shopItems.length > 0 ? shopItems : undefined,
+    totalPrice,
+    hasPhysicalItems,
+  };
+};

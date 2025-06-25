@@ -1,7 +1,7 @@
 import prisma from "@/hooks/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Fetch featured books (at most 4)
     const featuredBooks = await prisma.book.findMany({
@@ -16,6 +16,8 @@ export async function GET(req: NextRequest) {
             name: true,
           },
         },
+        bundleItems: true,
+        bundledInBooks: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -23,15 +25,10 @@ export async function GET(req: NextRequest) {
       take: 8,
     });
 
-    // Fetch books with "bundle" genre
+    // Fetch bundle books (books with isBundled: true)
     const bundleBooks = await prisma.book.findMany({
       where: {
-        genre: {
-          name: {
-            contains: "bundle",
-            mode: "insensitive",
-          },
-        },
+        isBundled: true,
         isAvailable: true,
       },
       include: {
@@ -41,6 +38,8 @@ export async function GET(req: NextRequest) {
             name: true,
           },
         },
+        bundleItems: true,
+        bundledInBooks: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -102,6 +101,9 @@ export async function GET(req: NextRequest) {
         downloadUrl: book.downloadUrl,
         fileSize: book.fileSize,
         format: book.format,
+        isBundled: book.isBundled,
+        bundleItems: book.bundleItems,
+        bundledInBooks: book.bundledInBooks,
         createdAt: book.createdAt,
       })),
       bundleBooks: bundleBooks.map((book) => ({
@@ -117,6 +119,9 @@ export async function GET(req: NextRequest) {
         downloadUrl: book.downloadUrl,
         fileSize: book.fileSize,
         format: book.format,
+        isBundled: book.isBundled,
+        bundleItems: book.bundleItems,
+        bundledInBooks: book.bundledInBooks,
         createdAt: book.createdAt,
       })),
       storeProducts: storeProducts.map((product) => ({

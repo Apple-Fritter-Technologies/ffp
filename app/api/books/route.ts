@@ -14,6 +14,8 @@ export async function GET(req: NextRequest) {
         where: { id },
         include: {
           genre: true,
+          bundleItems: true,
+          bundledInBooks: true,
         },
       });
 
@@ -28,6 +30,8 @@ export async function GET(req: NextRequest) {
         where: { genreId },
         include: {
           genre: true,
+          bundleItems: true,
+          bundledInBooks: true,
         },
       });
       if (books.length === 0) {
@@ -42,6 +46,8 @@ export async function GET(req: NextRequest) {
       const books = await prisma.book.findMany({
         include: {
           genre: true,
+          bundleItems: true,
+          bundledInBooks: true,
         },
       });
       return NextResponse.json(books, { status: 200 });
@@ -76,6 +82,8 @@ export async function POST(req: NextRequest) {
       downloadUrl,
       fileSize,
       format,
+      isBundled,
+      bundleItems,
     } = bookData;
 
     if (!title || !price || !genreId) {
@@ -95,12 +103,52 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate digital product fields
-    if (productType === "digital") {
+    if (productType === "digital" && !isBundled) {
       if (!downloadUrl) {
         return NextResponse.json(
           { error: "Download URL is required for digital products" },
           { status: 400 }
         );
+      }
+    }
+
+    // Validate bundle fields
+    if (isBundled) {
+      if (
+        !bundleItems ||
+        !Array.isArray(bundleItems) ||
+        bundleItems.length === 0
+      ) {
+        return NextResponse.json(
+          { error: "Bundle must contain at least one book" },
+          { status: 400 }
+        );
+      }
+
+      // Verify all bundle items exist
+      const existingBooks = await prisma.book.findMany({
+        where: { id: { in: bundleItems } },
+        select: { id: true, productType: true },
+      });
+
+      if (existingBooks.length !== bundleItems.length) {
+        return NextResponse.json(
+          { error: "One or more bundle items do not exist" },
+          { status: 400 }
+        );
+      }
+
+      // For digital bundles, ensure all items are digital
+      if (productType === "digital") {
+        const hasPhysicalItems = existingBooks.some(
+          (book) => book.productType === "physical"
+        );
+        if (hasPhysicalItems) {
+          return NextResponse.json(
+            { error: "Digital bundles cannot contain physical books" },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -119,9 +167,18 @@ export async function POST(req: NextRequest) {
         downloadUrl: downloadUrl || null,
         fileSize: fileSize || null,
         format: format || null,
+        isBundled: isBundled ?? false,
+        ...(isBundled &&
+          bundleItems?.length > 0 && {
+            bundleItems: {
+              connect: bundleItems.map((id: string) => ({ id })),
+            },
+          }),
       },
       include: {
         genre: true,
+        bundleItems: true,
+        bundledInBooks: true,
       },
     });
 
@@ -168,6 +225,8 @@ export async function PUT(req: NextRequest) {
       downloadUrl,
       fileSize,
       format,
+      isBundled,
+      bundleItems,
     } = bookData;
 
     if (!title || !price || !genreId) {
@@ -196,12 +255,55 @@ export async function PUT(req: NextRequest) {
     }
 
     // Validate digital product fields
-    if (productType === "digital") {
+    if (productType === "digital" && !isBundled) {
       if (!downloadUrl) {
         return NextResponse.json(
           { error: "Download URL is required for digital products" },
           { status: 400 }
         );
+      }
+    }
+
+    // Validate bundle fields
+    if (isBundled) {
+      if (
+        !bundleItems ||
+        !Array.isArray(bundleItems) ||
+        bundleItems.length === 0
+      ) {
+        return NextResponse.json(
+          { error: "Bundle must contain at least one book" },
+          { status: 400 }
+        );
+      }
+
+      // Verify all bundle items exist (excluding the current book being updated)
+      const existingBooks = await prisma.book.findMany({
+        where: {
+          id: { in: bundleItems },
+          NOT: { id: bookId }, // Exclude current book
+        },
+        select: { id: true, productType: true },
+      });
+
+      if (existingBooks.length !== bundleItems.length) {
+        return NextResponse.json(
+          { error: "One or more bundle items do not exist" },
+          { status: 400 }
+        );
+      }
+
+      // For digital bundles, ensure all items are digital
+      if (productType === "digital") {
+        const hasPhysicalItems = existingBooks.some(
+          (book) => book.productType === "physical"
+        );
+        if (hasPhysicalItems) {
+          return NextResponse.json(
+            { error: "Digital bundles cannot contain physical books" },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -221,9 +323,19 @@ export async function PUT(req: NextRequest) {
         downloadUrl: downloadUrl || null,
         fileSize: fileSize || null,
         format: format || null,
+        isBundled: isBundled ?? false,
+        bundleItems: {
+          set: [], // Clear existing connections
+          ...(isBundled &&
+            bundleItems?.length > 0 && {
+              connect: bundleItems.map((id: string) => ({ id })),
+            }),
+        },
       },
       include: {
         genre: true,
+        bundleItems: true,
+        bundledInBooks: true,
       },
     });
 

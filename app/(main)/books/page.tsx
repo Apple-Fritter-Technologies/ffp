@@ -99,8 +99,8 @@ const BooksPage = () => {
     if (selectedGenre === "all") {
       matchesGenre = true;
     } else if (selectedGenre === "bundle") {
-      // Special case: filter by genre name exactly matching "bundle"
-      matchesGenre = book.genre?.name?.toLowerCase() === "bundle" || false;
+      // Special case: filter by isBundled field
+      matchesGenre = book.isBundled === true;
     } else {
       // Regular case: filter by genre ID or genre name match
       matchesGenre =
@@ -120,11 +120,8 @@ const BooksPage = () => {
     if (genreId === "all") {
       return books.filter((book) => book.isAvailable).length;
     } else if (genreId === "bundle") {
-      return books.filter(
-        (book) =>
-          book.isAvailable &&
-          (book.genre?.name?.toLowerCase() === "bundle" || false)
-      ).length;
+      return books.filter((book) => book.isAvailable && book.isBundled === true)
+        .length;
     } else {
       return books.filter(
         (book) =>

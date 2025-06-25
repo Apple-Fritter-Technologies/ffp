@@ -21,10 +21,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Book, BookFormData, Genre, ProductType } from "@/types/interface";
 import { addBook, deleteBook, updateBook } from "@/hooks/actions/book-actions";
+import Image from "next/image";
 
 interface BookModalProps {
   isOpen: boolean;
@@ -33,6 +35,7 @@ interface BookModalProps {
   book?: Book | null;
   genres: Genre[];
   onSuccess: () => void; // Callback to refresh books list
+  booksData?: Book[];
 }
 
 const BookModal: React.FC<BookModalProps> = ({
@@ -42,6 +45,7 @@ const BookModal: React.FC<BookModalProps> = ({
   book,
   genres,
   onSuccess,
+  booksData,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<BookFormData>({
@@ -60,6 +64,11 @@ const BookModal: React.FC<BookModalProps> = ({
     downloadUrl: book?.downloadUrl || "",
     fileSize: book?.fileSize || "",
     format: book?.format || "",
+    bundleItems:
+      book?.bundleItems?.map((item) =>
+        typeof item === "string" ? item : item.id
+      ) || [],
+    isBundled: book?.isBundled || false,
   });
 
   const isEdit = mode === "edit";
@@ -83,6 +92,11 @@ const BookModal: React.FC<BookModalProps> = ({
         downloadUrl: book?.downloadUrl || "",
         fileSize: book?.fileSize || "",
         format: book?.format || "",
+        bundleItems:
+          book?.bundleItems?.map((item) =>
+            typeof item === "string" ? item : item.id
+          ) || [],
+        isBundled: book?.isBundled || false,
       });
     }
   }, [isOpen, book]);
@@ -102,9 +116,17 @@ const BookModal: React.FC<BookModalProps> = ({
     }
 
     // Additional validation for digital products
-    if (formData.productType === "digital") {
+    if (formData.productType === "digital" && !formData.isBundled) {
       if (!formData.downloadUrl?.trim()) {
         toast.error("Download URL is required for digital products");
+        return false;
+      }
+    }
+
+    // Additional validation for bundles
+    if (formData.isBundled) {
+      if (!formData.bundleItems || formData.bundleItems.length === 0) {
+        toast.error("Bundle must contain at least one book");
         return false;
       }
     }
@@ -203,7 +225,7 @@ const BookModal: React.FC<BookModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="md:min-w-3xl flex-1 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Book" : "Create New Book"}</DialogTitle>
           <DialogDescription>
@@ -349,6 +371,12 @@ const BookModal: React.FC<BookModalProps> = ({
           {formData.productType === "digital" && (
             <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
               <h3 className="text-sm font-medium">Digital Product Details</h3>
+              {formData.isBundled && (
+                <p className="text-xs text-muted-foreground">
+                  Download URL, file size, and format are not required for
+                  bundled digital products.
+                </p>
+              )}
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="downloadUrl">Download URL *</Label>
@@ -415,7 +443,179 @@ const BookModal: React.FC<BookModalProps> = ({
               />
               <Label htmlFor="isFeatured">Featured</Label>
             </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="isBundled"
+                checked={formData.isBundled}
+                onCheckedChange={(checked) =>
+                  setFormData({
+                    ...formData,
+                    isBundled: checked,
+                    bundleItems: checked ? formData.bundleItems : [],
+                  })
+                }
+                disabled={isLoading}
+              />
+              <Label htmlFor="isBundled">Bundle</Label>
+            </div>
           </div>
+
+          {/* Bundle Items Selection */}
+          {formData.isBundled && (
+            <div className="space-y-4 border-t pt-4">
+              <div className="space-y-2">
+                <Label>Bundle Items</Label>
+                <p className="text-sm text-muted-foreground">
+                  Select books to include in this bundle
+                  {formData.productType === "digital" &&
+                    " (Only digital books can be added to digital bundles)"}
+                </p>
+              </div>
+
+              {formData.productType === "digital" && (
+                <div className="p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> For digital bundles, you can only add
+                    other digital books. Physical items cannot be included.
+                  </p>
+                </div>
+              )}
+
+              <div className="max-h-60 overflow-y-auto border rounded-md">
+                {booksData && booksData.length > 0 ? (
+                  <div className="p-4 space-y-2">
+                    {booksData
+                      .filter((bookItem) => {
+                        // Don't show the current book being edited
+                        if (isEdit && bookItem.id === book?.id) return false;
+                        // If this is a digital bundle, only show digital books
+                        if (formData.productType === "digital") {
+                          return bookItem.productType === "digital";
+                        }
+                        return true;
+                      })
+                      .map((bookItem) => (
+                        <div
+                          key={bookItem.id}
+                          className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded"
+                        >
+                          <Image
+                            src={
+                              bookItem.imageUrl ||
+                              "/images/placeholder-book.png"
+                            }
+                            alt={bookItem.title}
+                            width={50}
+                            height={75}
+                            className="rounded"
+                          />
+                          <Label
+                            htmlFor={`bundle-${bookItem.id}`}
+                            className="flex-1 cursor-pointer"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="font-medium">
+                                  {bookItem.title}
+                                </span>
+                                {bookItem.author && (
+                                  <span className="text-sm text-muted-foreground mx-2">
+                                    by {bookItem.author}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">
+                                  ${bookItem.price}
+                                </span>
+                                <span
+                                  className={`text-xs px-2 py-1 rounded ${
+                                    bookItem.productType === "digital"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : "bg-green-100 text-green-800"
+                                  }`}
+                                >
+                                  {bookItem.productType}
+                                </span>
+                                {bookItem.genre && (
+                                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded">
+                                    {bookItem.genre.name}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </Label>
+
+                          <Checkbox
+                            id={`bundle-${bookItem.id}`}
+                            checked={
+                              formData.bundleItems?.includes(bookItem.id) ||
+                              false
+                            }
+                            onCheckedChange={(checked) => {
+                              const currentItems = formData.bundleItems || [];
+                              const newItems = checked
+                                ? [...currentItems, bookItem.id]
+                                : currentItems.filter(
+                                    (id) => id !== bookItem.id
+                                  );
+                              setFormData({
+                                ...formData,
+                                bundleItems: newItems,
+                              });
+                            }}
+                            disabled={isLoading}
+                          />
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    No books available for bundling
+                  </div>
+                )}
+              </div>
+
+              {formData.bundleItems && formData.bundleItems.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Selected Items ({formData.bundleItems.length})
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.bundleItems.map((itemId) => {
+                      const bookItem = booksData?.find((b) => b.id === itemId);
+                      if (!bookItem) return null;
+                      return (
+                        <div
+                          key={itemId}
+                          className="flex items-center gap-1 bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm"
+                        >
+                          <span>{bookItem.title}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newItems =
+                                formData.bundleItems?.filter(
+                                  (id) => id !== itemId
+                                ) || [];
+                              setFormData({
+                                ...formData,
+                                bundleItems: newItems,
+                              });
+                            }}
+                            className="ml-1 text-gray-500 hover:text-gray-700"
+                            disabled={isLoading}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter>

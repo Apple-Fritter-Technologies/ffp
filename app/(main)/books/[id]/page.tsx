@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   ShoppingCart,
-  Heart,
   Share2,
   Star,
   Plus,
@@ -176,11 +175,6 @@ const BookDetailPage = () => {
       navigator.clipboard.writeText(window.location.href);
       toast.success("Link copied to clipboard!");
     }
-  };
-
-  const toggleWishlist = () => {
-    setIsWishlisted(!isWishlisted);
-    toast.success(isWishlisted ? "Removed from wishlist" : "Added to wishlist");
   };
 
   const bookInformation = [
@@ -441,21 +435,6 @@ const BookDetailPage = () => {
               <Button
                 variant="outline"
                 size="lg"
-                onClick={toggleWishlist}
-                className="flex-1 group bg-card/50 backdrop-blur-sm border-accent-3/20 hover:bg-accent-2/10"
-              >
-                <Heart
-                  className={`w-4 h-4 mr-2 transition-all duration-200 ${
-                    isWishlisted
-                      ? "fill-current text-red-500 scale-110"
-                      : "group-hover:scale-110"
-                  }`}
-                />
-                {isWishlisted ? "Wishlisted" : "Add to Wishlist"}
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
                 onClick={handleShare}
                 className="flex-1 group bg-card/50 backdrop-blur-sm border-accent-3/20 hover:bg-accent-2/10"
               >
@@ -642,6 +621,96 @@ const BookDetailPage = () => {
                 )}
               </div>
             </Card>
+
+            {/* Bundle Items Display */}
+            {book.isBundled &&
+              book.bundleItems &&
+              book.bundleItems.length > 0 && (
+                <Card className="p-4 bg-card/50 backdrop-blur-sm border-accent-3/20">
+                  <h3 className="font-semibold flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                      <Package className="w-4 h-4 text-purple-500" />
+                    </div>
+                    Bundle Contents ({book.bundleItems.length} items)
+                  </h3>
+                  <div className="space-y-3">
+                    {book.bundleItems.map((bundleBook, index) => (
+                      <div
+                        key={bundleBook.id}
+                        className="flex items-center gap-3 p-3 bg-background/30 rounded-lg hover:bg-background/50 transition-colors"
+                      >
+                        <div className="flex-shrink-0">
+                          <Image
+                            src={
+                              bundleBook.imageUrl || "/images/placeholder.jpeg"
+                            }
+                            alt={bundleBook.title}
+                            width={40}
+                            height={60}
+                            className="rounded object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <Link
+                            href={`/books/${bundleBook.id}`}
+                            className="font-medium text-sm hover:text-accent-2 transition-colors line-clamp-1"
+                          >
+                            {bundleBook.title}
+                          </Link>
+                          {bundleBook.author && (
+                            <p className="text-xs text-muted-foreground">
+                              by {bundleBook.author}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">
+                            ${Number(bundleBook.price).toFixed(2)}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${
+                              bundleBook.productType === "digital"
+                                ? "border-blue-500 text-blue-600"
+                                : "border-green-500 text-green-600"
+                            }`}
+                          >
+                            {bundleBook.productType}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="pt-3 border-t border-border/50">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="font-medium">Bundle Value:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground line-through">
+                            $
+                            {book.bundleItems
+                              .reduce(
+                                (total, item) => total + Number(item.price),
+                                0
+                              )
+                              .toFixed(2)}
+                          </span>
+                          <span className="font-bold text-green-600">
+                            ${Number(book.price).toFixed(2)}
+                          </span>
+                          <Badge variant="destructive" className="text-xs">
+                            Save $
+                            {(
+                              book.bundleItems.reduce(
+                                (total, item) => total + Number(item.price),
+                                0
+                              ) - Number(book.price)
+                            ).toFixed(2)}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )}
 
             {/* Enhanced Book Details */}
             <Card className="p-4 bg-card/50 backdrop-blur-sm border-accent-3/20">

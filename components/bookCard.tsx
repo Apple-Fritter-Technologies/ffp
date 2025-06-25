@@ -1,7 +1,7 @@
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/store/use-cart";
 import { Book, ProductType } from "@/types/interface";
-import { Plus, Download, Star } from "lucide-react";
+import { Plus, Download, Star, Package } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -32,7 +32,13 @@ function BookCard({ book }: { book: Book }) {
   return (
     <div className="w-full h-full flex flex-col relative bg-accent-1/10 backdrop-blur-md rounded-3xl overflow-hidden border border-accent-3/30 transition-all duration-700 hover:shadow-2xl hover:shadow-accent-2/10 group">
       {/* Quick Add Button - Shows on Hover */}
-      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+      <div
+        className={`absolute ${
+          book.isBundled
+            ? "top-12 right-3 sm:top-14 sm:right-4"
+            : "top-3 right-3 sm:top-4 sm:right-4"
+        } opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50`}
+      >
         <button
           onClick={addToCart}
           className="cursor-pointer w-8 h-8 sm:w-10 sm:h-10 bg-accent-3/50 backdrop-blur-md rounded-full border flex items-center justify-center hover:bg-accent-2 transition-all duration-300"
@@ -65,15 +71,25 @@ function BookCard({ book }: { book: Book }) {
             {book.genre?.name || "Genre"}
           </span>
 
+          {/* Bundle Badge - Top Right */}
+          {book.isBundled && (
+            <span className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-purple-500/70 backdrop-blur-md p-1.5 py-1 rounded-full border border-white/20 text-white w-fit flex items-center gap-1 font-medium text-xs">
+              <Package className="w-3 h-3" />
+              Bundle
+            </span>
+          )}
+
           <div className="absolute bottom-0 left-0 w-full flex items-center justify-between p-2">
-            {book.productType === ProductType.digital && (
-              <span className="bg-blue-500/70 backdrop-blur-md p-1.5 rounded-full border border-white/20 text-white w-fit flex items-center gap-1 font-medium text-xs">
-                <Download className="w-3 h-3" />
-                Digital
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {book.productType === ProductType.digital && (
+                <span className="bg-blue-500/70 backdrop-blur-md p-1.5 py-1 rounded-full border border-white/20 text-white w-fit flex items-center gap-1 font-medium text-xs">
+                  <Download className="w-3 h-3" />
+                  Digital
+                </span>
+              )}
+            </div>
             {book.isFeatured && (
-              <span className="bg-yellow-500/70 backdrop-blur-md text-white p-1.5 rounded-full border border-white/20 font-medium w-fit flex items-center gap-1 text-xs">
+              <span className="bg-yellow-500/70 backdrop-blur-md text-white p-1.5 py-1 rounded-full border border-white/20 font-medium w-fit flex items-center gap-1 text-xs">
                 <Star className="w-3 h-3" />
                 Featured
               </span>

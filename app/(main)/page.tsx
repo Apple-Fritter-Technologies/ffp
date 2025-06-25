@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Categories from "@/components/categories";
 import FeaturedBooks from "@/components/featured-books";
-import Hero from "@/components/hero";
 import Newsletter from "@/components/newsletter";
 import PodcastsBanner from "@/components/podcasts-banner";
 import Stats from "@/components/stats";
@@ -12,6 +11,8 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { HomeData } from "@/types/interface";
 import IntroHero from "@/components/intro-hero";
+import BundleHero from "@/components/bundle-hero";
+
 export default function Home() {
   const [homeData, setHomeData] = useState<HomeData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,7 +72,7 @@ export default function Home() {
   return (
     <div className="space-y-16">
       <IntroHero />
-      <Hero bundleBooks={homeData.bundleBooks} />
+      <BundleHero bundleBooks={homeData.bundleBooks} />
       <div className="container mx-auto space-y-16 px-4 md:px-6">
         <FeaturedBooks books={homeData.featuredBooks} />
         <Categories genres={homeData.genres} />

@@ -89,11 +89,16 @@ model Book {
   downloadUrl String?
   fileSize    String?
   format      String?
+  isBundled   Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   genre      Genre       @relation(fields: [genreId], references: [id])
   orderItems OrderItem[]
+
+  // Many-to-many relationship for bundle items
+  bundleItems    Book[] @relation("BookBundle")
+  bundledInBooks Book[] @relation("BookBundle")
 
   @@index([genreId])
   @@index([isFeatured])

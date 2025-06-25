@@ -66,9 +66,17 @@ export interface Book {
   updatedAt?: Date;
   genre?: Genre;
   orderItems?: OrderItem[];
+  isBundled?: boolean;
+  bundleItems?: Book[];
+  bundledInBooks?: Book[];
 }
 
-export type BookFormData = Omit<Book, "createdAt" | "updatedAt">;
+export type BookFormData = Omit<
+  Book,
+  "createdAt" | "updatedAt" | "bundleItems" | "bundledInBooks"
+> & {
+  bundleItems?: string[];
+};
 
 export interface Genre {
   id: string;
@@ -90,6 +98,8 @@ export interface CartItem {
   productType?: "physical" | "digital";
   itemType?: "book" | "shop"; // New field to distinguish between books and shop products
   genreId?: string; // For books only
+  isBundled?: boolean; // Whether this item is a bundle
+  bundleItems?: Book[]; // Items included in bundle (if this is a bundle)
 }
 
 export interface Podcast {

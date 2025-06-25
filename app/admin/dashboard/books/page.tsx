@@ -23,7 +23,6 @@ import {
   Download,
   Package,
 } from "lucide-react";
-import Image from "next/image";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import BookModal from "../../components/book-modal";
@@ -250,6 +249,7 @@ const DashboardBooksPage = () => {
                   <TableHead>Type</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Digital Info</TableHead>
+                  <TableHead>Bundle Info</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -315,6 +315,28 @@ const DashboardBooksPage = () => {
                       )}
                     </TableCell>
                     <TableCell>
+                      {book.isBundled ? (
+                        <div className="text-sm space-y-1">
+                          <Badge
+                            variant="outline"
+                            className="text-purple-600 border-purple-600"
+                          >
+                            Bundle ({book.bundleItems?.length || 0} items)
+                          </Badge>
+                          {book.bundleItems && book.bundleItems.length > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              Contains {book.bundleItems.length} book
+                              {book.bundleItems.length > 1 ? "s" : ""}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">
+                          Single item
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <div className="flex flex-col gap-1">
                         {book.isAvailable && (
                           <Badge variant="default">Available</Badge>
@@ -364,6 +386,7 @@ const DashboardBooksPage = () => {
         mode="create"
         genres={genres}
         onSuccess={handleModalSuccess}
+        booksData={books}
       />
 
       {/* Edit Modal */}
@@ -377,6 +400,7 @@ const DashboardBooksPage = () => {
         book={selectedBook}
         genres={genres}
         onSuccess={handleModalSuccess}
+        booksData={books}
       />
     </div>
   );
