@@ -206,7 +206,7 @@ export default function BundleHero({ bundleBooks }: BundleHeroProps) {
                 <div className="relative flex-1 w-full min-h-[300px] lg:min-h-[500px] overflow-hidden">
                   <GridPattern color="black" />
                   <Image
-                    src={book.imageUrl || "/placeholder-book.jpg"}
+                    src={book.imageUrl || "/images/placeholder.jpeg"}
                     alt={book.title}
                     fill
                     className="object-contain relative z-10"

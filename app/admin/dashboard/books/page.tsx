@@ -22,6 +22,7 @@ import {
   Loader2,
   Download,
   Package,
+  ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -267,8 +268,8 @@ const DashboardBooksPage = () => {
                           className="rounded object-cover"
                         />
                       ) : (
-                        <div className="w-10 h-15 bg-gray-200 rounded flex items-center justify-center">
-                          <span className="text-xs">No img</span>
+                        <div className="w-12 h-16 bg-gray-200 rounded flex items-center text-center justify-center">
+                          <ImageIcon className="w-6 h-6 text-gray-500" />
                         </div>
                       )}
                     </TableCell>

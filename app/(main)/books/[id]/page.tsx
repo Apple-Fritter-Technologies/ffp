@@ -634,7 +634,7 @@ const BookDetailPage = () => {
                     Bundle Contents ({book.bundleItems.length} items)
                   </h3>
                   <div className="space-y-3">
-                    {book.bundleItems.map((bundleBook, index) => (
+                    {book.bundleItems.map((bundleBook) => (
                       <div
                         key={bundleBook.id}
                         className="flex items-center gap-3 p-3 bg-background/30 rounded-lg hover:bg-background/50 transition-colors"

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Trash2, X } from "lucide-react";
+import { ImageIcon, Loader2, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Book, BookFormData, Genre, ProductType } from "@/types/interface";
 import { addBook, deleteBook, updateBook } from "@/hooks/actions/book-actions";
@@ -499,16 +499,21 @@ const BookModal: React.FC<BookModalProps> = ({
                           key={bookItem.id}
                           className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded"
                         >
-                          <Image
-                            src={
-                              bookItem.imageUrl ||
-                              "/images/placeholder-book.png"
-                            }
-                            alt={bookItem.title}
-                            width={50}
-                            height={75}
-                            className="rounded"
-                          />
+                          {bookItem.imageUrl ? (
+                            <Image
+                              src={
+                                bookItem.imageUrl || "/images/placeholder.jpeg"
+                              }
+                              alt={bookItem.title}
+                              width={50}
+                              height={75}
+                              className="rounded"
+                            />
+                          ) : (
+                            <div className="w-12 h-16 bg-gray-200 rounded flex items-center text-center justify-center">
+                              <ImageIcon className="w-6 h-6 text-gray-500" />
+                            </div>
+                          )}
                           <Label
                             htmlFor={`bundle-${bookItem.id}`}
                             className="flex-1 cursor-pointer"
