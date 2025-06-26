@@ -18,7 +18,6 @@ import {
   getYouTubeThumbnail,
 } from "@/lib/utils";
 import Image from "next/image";
-import TrenchesPodcastBanner from "./trenches-podcast-banner";
 
 interface PodcastsBannerProps {
   podcasts: Podcast[];
@@ -391,8 +390,6 @@ const PodcastsBanner = ({ podcasts }: PodcastsBannerProps) => {
           </div>
         </div>
       </div>
-
-      <TrenchesPodcastBanner />
     </section>
   );
 };

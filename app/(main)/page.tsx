@@ -12,6 +12,7 @@ import { Loader2 } from "lucide-react";
 import { HomeData } from "@/types/interface";
 import IntroHero from "@/components/intro-hero";
 import BundleHero from "@/components/bundle-hero";
+import TrenchesPodcastBanner from "@/components/trenches-podcast-banner";
 
 export default function Home() {
   const [homeData, setHomeData] = useState<HomeData | null>(null);
@@ -78,6 +79,7 @@ export default function Home() {
         <Categories genres={homeData.genres} />
         <Stats />
         <PodcastsBanner podcasts={homeData.podcasts} />
+        <TrenchesPodcastBanner />
         <Newsletter />
       </div>
     </div>
