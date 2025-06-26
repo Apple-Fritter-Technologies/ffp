@@ -134,55 +134,53 @@ export default function BundleHero({ bundleBooks }: BundleHeroProps) {
                       <div className="mb-8">
                         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                           <Star className="w-4 h-4 text-accent-2" />
-                          What's Included:
+                          What&apos;s Included:
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto">
-                          {book.bundleItems
-                            .slice(0, 6)
-                            .map((bundleBook, index) => (
-                              <div
-                                key={bundleBook.id}
-                                className="flex items-center gap-3 p-3 bg-background/50 backdrop-blur-sm rounded-lg border border-accent-3/20 hover:bg-background/70 transition-colors"
-                              >
-                                <div className="flex-shrink-0">
-                                  <Image
-                                    src={
-                                      bundleBook.imageUrl ||
-                                      "/images/placeholder.jpeg"
-                                    }
-                                    alt={bundleBook.title}
-                                    width={32}
-                                    height={48}
-                                    className="rounded object-cover"
-                                  />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-sm text-foreground line-clamp-1">
-                                    {bundleBook.title}
+                          {book.bundleItems.slice(0, 6).map((bundleBook) => (
+                            <div
+                              key={bundleBook.id}
+                              className="flex items-center gap-3 p-3 bg-background/50 backdrop-blur-sm rounded-lg border border-accent-3/20 hover:bg-background/70 transition-colors"
+                            >
+                              <div className="flex-shrink-0">
+                                <Image
+                                  src={
+                                    bundleBook.imageUrl ||
+                                    "/images/placeholder.jpeg"
+                                  }
+                                  alt={bundleBook.title}
+                                  width={32}
+                                  height={48}
+                                  className="rounded object-cover"
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm text-foreground line-clamp-1">
+                                  {bundleBook.title}
+                                </p>
+                                {bundleBook.author && (
+                                  <p className="text-xs text-muted-foreground line-clamp-1">
+                                    by {bundleBook.author}
                                   </p>
-                                  {bundleBook.author && (
-                                    <p className="text-xs text-muted-foreground line-clamp-1">
-                                      by {bundleBook.author}
-                                    </p>
-                                  )}
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs font-medium text-accent-2">
-                                      ${Number(bundleBook.price).toFixed(2)}
-                                    </span>
-                                    <Badge
-                                      variant="outline"
-                                      className={`text-xs px-1.5 py-0.5 ${
-                                        bundleBook.productType === "digital"
-                                          ? "border-blue-400 text-blue-600"
-                                          : "border-green-400 text-green-600"
-                                      }`}
-                                    >
-                                      {bundleBook.productType}
-                                    </Badge>
-                                  </div>
+                                )}
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs font-medium text-accent-2">
+                                    ${Number(bundleBook.price).toFixed(2)}
+                                  </span>
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs px-1.5 py-0.5 ${
+                                      bundleBook.productType === "digital"
+                                        ? "border-blue-400 text-blue-600"
+                                        : "border-green-400 text-green-600"
+                                    }`}
+                                  >
+                                    {bundleBook.productType}
+                                  </Badge>
                                 </div>
                               </div>
-                            ))}
+                            </div>
+                          ))}
                           {book.bundleItems.length > 6 && (
                             <div className="flex items-center justify-center p-3 bg-background/30 backdrop-blur-sm rounded-lg border border-accent-3/20 text-muted-foreground">
                               <span className="text-sm">
