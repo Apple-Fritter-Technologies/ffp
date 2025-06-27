@@ -2,6 +2,141 @@ import prisma from "@/hooks/prisma";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
+// Content type mapping for file formats
+const CONTENT_TYPE_MAP: Record<string, string> = {
+  pdf: "application/pdf",
+  epub: "application/epub+zip",
+  mobi: "application/x-mobipocket-ebook",
+  zip: "application/zip",
+  mp3: "audio/mpeg",
+  mp4: "video/mp4",
+  txt: "text/plain",
+};
+
+const VALID_PAYMENT_STATUSES = ["succeeded", "paid", "complete"];
+const VALID_ITEM_TYPES = ["book", "shop"] as const;
+
+type ItemType = (typeof VALID_ITEM_TYPES)[number];
+
+interface DownloadItemData {
+  downloadUrl: string;
+  itemTitle: string;
+  fileFormat: string;
+  fileSize: string;
+  downloadItem: any;
+}
+
+interface DownloadItemResult {
+  success: boolean;
+  data?: DownloadItemData;
+  error?: string;
+  statusCode?: number;
+}
+
+// Helper function to find and validate download item
+function findDownloadItem(
+  order: any,
+  itemId: string,
+  itemType: ItemType
+): DownloadItemResult {
+  if (itemType === "book") {
+    // First, try to find the book directly in order items
+    const orderItem = order.orderItems.find(
+      (item: any) => item.book.id === itemId
+    );
+
+    if (orderItem) {
+      // Found directly in order items
+      if (!orderItem.book.isAvailable) {
+        return {
+          success: false,
+          error: "This book is no longer available for download",
+          statusCode: 403,
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          downloadItem: orderItem.book,
+          downloadUrl: orderItem.book.downloadUrl || "",
+          itemTitle: orderItem.book.title,
+          fileFormat: orderItem.book.format || "",
+          fileSize: orderItem.book.fileSize || "",
+        },
+      };
+    }
+
+    // Check if it's a bundle item within any purchased bundle
+    for (const item of order.orderItems) {
+      if (item.book.isBundled && item.book.bundleItems) {
+        const bundleItem = item.book.bundleItems.find(
+          (bundleBook: any) => bundleBook.id === itemId
+        );
+
+        if (bundleItem) {
+          if (!bundleItem.isAvailable) {
+            return {
+              success: false,
+              error: "This book is no longer available for download",
+              statusCode: 403,
+            };
+          }
+
+          return {
+            success: true,
+            data: {
+              downloadItem: bundleItem,
+              downloadUrl: bundleItem.downloadUrl || "",
+              itemTitle: bundleItem.title,
+              fileFormat: bundleItem.format || "",
+              fileSize: bundleItem.fileSize || "",
+            },
+          };
+        }
+      }
+    }
+
+    return {
+      success: false,
+      error: "Book not found in this order",
+      statusCode: 404,
+    };
+  } else {
+    // Shop item
+    const shopOrderItem = order.shopOrderItems.find(
+      (item: any) => item.storeProduct.id === itemId
+    );
+
+    if (!shopOrderItem) {
+      return {
+        success: false,
+        error: "Shop item not found in this order",
+        statusCode: 404,
+      };
+    }
+
+    if (!shopOrderItem.storeProduct.isAvailable) {
+      return {
+        success: false,
+        error: "This shop item is no longer available for download",
+        statusCode: 403,
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        downloadItem: shopOrderItem.storeProduct,
+        downloadUrl: shopOrderItem.storeProduct.downloadUrl || "",
+        itemTitle: shopOrderItem.storeProduct.title,
+        fileFormat: shopOrderItem.storeProduct.format || "",
+        fileSize: shopOrderItem.storeProduct.fileSize || "",
+      },
+    };
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     // 1. Verify user authentication using Clerk
@@ -19,7 +154,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const orderId = searchParams.get("orderId");
     const itemId = searchParams.get("itemId");
-    const itemType = searchParams.get("itemType"); // "book" or "shop"
+    const itemType = searchParams.get("itemType") as ItemType;
 
     if (!orderId || !itemId || !itemType) {
       return NextResponse.json(
@@ -28,23 +163,20 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (!["book", "shop"].includes(itemType)) {
+    if (!VALID_ITEM_TYPES.includes(itemType)) {
       return NextResponse.json(
         { error: "Invalid itemType. Must be 'book' or 'shop'" },
         { status: 400 }
       );
     }
 
-    // 3. Fetch order with all necessary relations
+    // 3. Fetch order with necessary relations
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
         user: {
           select: {
-            id: true,
             clerkId: true,
-            email: true,
-            name: true,
           },
         },
         orderItems: {
@@ -58,6 +190,18 @@ export async function GET(req: NextRequest) {
                 format: true,
                 fileSize: true,
                 isAvailable: true,
+                isBundled: true,
+                bundleItems: {
+                  select: {
+                    id: true,
+                    title: true,
+                    productType: true,
+                    downloadUrl: true,
+                    format: true,
+                    fileSize: true,
+                    isAvailable: true,
+                  },
+                },
               },
             },
           },
@@ -79,9 +223,7 @@ export async function GET(req: NextRequest) {
         },
         payment: {
           select: {
-            id: true,
             status: true,
-            amount: true,
           },
         },
       },
@@ -104,7 +246,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 6. Check order status (must be completed)
-    if (order.status !== "completed") {
+    if (order.status === "pending" || order.status === "cancelled") {
       return NextResponse.json(
         {
           error: `Download not available. Order status is '${order.status}'. Downloads are only available for completed orders.`,
@@ -114,9 +256,8 @@ export async function GET(req: NextRequest) {
     }
 
     // 7. Verify payment status
-    const validPaymentStatuses = ["succeeded", "paid", "complete"];
     const hasValidPayment = order.payment.some((payment) =>
-      validPaymentStatuses.includes(payment.status.toLowerCase())
+      VALID_PAYMENT_STATUSES.includes(payment.status.toLowerCase())
     );
 
     if (!hasValidPayment) {
@@ -130,65 +271,19 @@ export async function GET(req: NextRequest) {
     }
 
     // 8. Find and validate the specific item
-    let downloadItem: any = null;
-    let downloadUrl: string = "";
-    let itemTitle: string = "";
-    let fileFormat: string = "";
-    let fileSize: string = "";
+    const downloadItemResult = findDownloadItem(order, itemId, itemType);
 
-    if (itemType === "book") {
-      const orderItem = order.orderItems.find(
-        (item) => item.book.id === itemId
+    if (!downloadItemResult.success) {
+      return NextResponse.json(
+        { error: downloadItemResult.error },
+        { status: downloadItemResult.statusCode }
       );
-
-      if (!orderItem) {
-        return NextResponse.json(
-          { error: "Book not found in this order" },
-          { status: 404 }
-        );
-      }
-
-      downloadItem = orderItem.book;
-      downloadUrl = orderItem.book.downloadUrl || "";
-      itemTitle = orderItem.book.title;
-      fileFormat = orderItem.book.format || "";
-      fileSize = orderItem.book.fileSize || "";
-
-      // Check if book is still available
-      if (!orderItem.book.isAvailable) {
-        return NextResponse.json(
-          { error: "This book is no longer available for download" },
-          { status: 403 }
-        );
-      }
-    } else if (itemType === "shop") {
-      const shopOrderItem = order.shopOrderItems.find(
-        (item) => item.storeProduct.id === itemId
-      );
-
-      if (!shopOrderItem) {
-        return NextResponse.json(
-          { error: "Shop item not found in this order" },
-          { status: 404 }
-        );
-      }
-
-      downloadItem = shopOrderItem.storeProduct;
-      downloadUrl = shopOrderItem.storeProduct.downloadUrl || "";
-      itemTitle = shopOrderItem.storeProduct.title;
-      fileFormat = shopOrderItem.storeProduct.format || "";
-      fileSize = shopOrderItem.storeProduct.fileSize || "";
-
-      // Check if shop item is still available
-      if (!shopOrderItem.storeProduct.isAvailable) {
-        return NextResponse.json(
-          { error: "This shop item is no longer available for download" },
-          { status: 403 }
-        );
-      }
     }
 
-    // 9. Verify item is digital product
+    const { downloadUrl, itemTitle, fileFormat, fileSize, downloadItem } =
+      downloadItemResult.data!;
+
+    // 9. Verify item is digital product and has download URL
     if (downloadItem.productType !== "digital") {
       return NextResponse.json(
         { error: "This item is not a digital product" },
@@ -196,7 +291,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 10. Verify download URL exists
     if (!downloadUrl) {
       return NextResponse.json(
         { error: "Download URL not available for this item" },
@@ -204,19 +298,19 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 11. Validate download URL (basic URL validation)
+    // 10. Validate download URL
     try {
       new URL(downloadUrl);
-    } catch (urlError) {
-      console.error("Invalid download URL:", downloadUrl, urlError);
+    } catch {
+      console.error("Invalid download URL:", downloadUrl);
       return NextResponse.json(
         { error: "Invalid download URL. Please contact support." },
         { status: 500 }
       );
     }
 
-    // 12. Log download attempt for audit purposes
-    console.log(`Download initiated:`, {
+    // 11. Log download attempt for audit purposes
+    console.log("Download initiated:", {
       userId: user.id,
       userClerkId: userId,
       orderId: order.id,
@@ -224,83 +318,30 @@ export async function GET(req: NextRequest) {
       itemType,
       itemTitle,
       timestamp: new Date().toISOString(),
-      userAgent: req.headers.get("user-agent"),
-      ip: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip"),
     });
 
-    // 13. Check for direct file download vs redirect
-    const userAgent = req.headers.get("user-agent") || "";
+    // 12. Handle different response types
     const isDirectDownload = searchParams.get("direct") === "true";
+    const isInfoRequest = searchParams.get("info") === "true";
 
     if (isDirectDownload) {
-      // For direct downloads, we can try to fetch and stream the file
-      try {
-        const fileResponse = await fetch(downloadUrl);
-
-        if (!fileResponse.ok) {
-          throw new Error(`Failed to fetch file: ${fileResponse.status}`);
-        }
-
-        // Get file content
-        const fileBuffer = await fileResponse.arrayBuffer();
-
-        // Determine content type based on format
-        const getContentType = (format: string) => {
-          const formatMap: { [key: string]: string } = {
-            pdf: "application/pdf",
-            epub: "application/epub+zip",
-            mobi: "application/x-mobipocket-ebook",
-            zip: "application/zip",
-            mp3: "audio/mpeg",
-            mp4: "video/mp4",
-            txt: "text/plain",
-          };
-          return formatMap[format.toLowerCase()] || "application/octet-stream";
-        };
-
-        const contentType = getContentType(fileFormat);
-        const fileName = `${itemTitle.replace(
-          /[^a-zA-Z0-9\s\-_]/g,
-          ""
-        )}.${fileFormat}`;
-
-        // Return file with appropriate headers
-        return new NextResponse(fileBuffer, {
-          status: 200,
-          headers: {
-            "Content-Type": contentType,
-            "Content-Disposition": `attachment; filename="${fileName}"`,
-            "Content-Length": fileBuffer.byteLength.toString(),
-            "Cache-Control": "private, no-cache, no-store, must-revalidate",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
-        });
-      } catch (fileError) {
-        console.error("Direct download failed:", fileError);
-        // Fall back to redirect if direct download fails
-      }
+      return handleDirectDownload(downloadUrl, itemTitle, fileFormat);
     }
 
-    // 14. Return download information (default behavior - redirect or info)
-    if (searchParams.get("info") === "true") {
-      // Return download information instead of redirecting
-      return NextResponse.json(
-        {
-          success: true,
-          downloadUrl,
-          itemTitle,
-          fileFormat,
-          fileSize,
-          itemType,
-          orderId,
-          message: "Download authorized",
-        },
-        { status: 200 }
-      );
+    if (isInfoRequest) {
+      return NextResponse.json({
+        success: true,
+        downloadUrl,
+        itemTitle,
+        fileFormat,
+        fileSize,
+        itemType,
+        orderId,
+        message: "Download authorized",
+      });
     }
 
-    // 15. Default: Redirect to download URL
+    // Default: Redirect to download URL
     return NextResponse.redirect(downloadUrl, 302);
   } catch (error) {
     console.error("Download API error:", error);
@@ -308,5 +349,44 @@ export async function GET(req: NextRequest) {
       { error: "Internal server error. Please try again later." },
       { status: 500 }
     );
+  }
+}
+
+// Helper function to handle direct downloads
+async function handleDirectDownload(
+  downloadUrl: string,
+  itemTitle: string,
+  fileFormat: string
+): Promise<NextResponse> {
+  try {
+    const fileResponse = await fetch(downloadUrl);
+
+    if (!fileResponse.ok) {
+      throw new Error(`Failed to fetch file: ${fileResponse.status}`);
+    }
+
+    const fileBuffer = await fileResponse.arrayBuffer();
+    const contentType =
+      CONTENT_TYPE_MAP[fileFormat.toLowerCase()] || "application/octet-stream";
+    const fileName = `${itemTitle.replace(
+      /[^a-zA-Z0-9\s\-_]/g,
+      ""
+    )}.${fileFormat}`;
+
+    return new NextResponse(fileBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Content-Length": fileBuffer.byteLength.toString(),
+        "Cache-Control": "private, no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
+  } catch (error) {
+    console.error("Direct download failed:", error);
+    // Fall back to redirect
+    return NextResponse.redirect(downloadUrl, 302);
   }
 }

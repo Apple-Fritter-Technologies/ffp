@@ -119,6 +119,13 @@ const BookDetailPage = () => {
         image: book.imageUrl || "/images/placeholder.jpeg",
         author: book.author || "Unknown Author",
         productType: book.productType,
+        itemType: "book",
+        genreId: book.genreId,
+        genreName: book.genre?.name,
+        isBundled: book.isBundled,
+        bundleItems: book.bundleItems,
+        bundleItemsCount: book.bundleItems?.length || 0,
+        bundleType: book.isBundled ? "Book Bundle" : undefined,
       });
 
       toast.success("Added to cart!");

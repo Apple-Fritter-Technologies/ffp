@@ -71,18 +71,12 @@ export const downloadItem = async (
       return { error: "Download URL not available" };
     }
   } catch (error: unknown) {
-    console.error("Download action error:", error);
     if (axios.isAxiosError(error)) {
       const errorMessage =
         error.response?.data?.error ||
         error.message ||
         "Failed to get download URL";
-      console.error("Axios error details:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers,
-      });
+
       return { error: errorMessage };
     }
     return { error: "Failed to get download URL" };

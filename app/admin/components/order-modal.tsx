@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { updateAdminOrderStatus } from "@/hooks/actions/order-action";
 import { downloadItem } from "@/hooks/actions/download-actions";
 import { shippingCost } from "@/lib/constant";
+import Link from "next/link";
 
 interface OrderModalProps {
   open: boolean;
@@ -375,102 +376,300 @@ const OrderModal: React.FC<OrderModalProps> = ({
             <div className="space-y-3">
               {/* Book Items */}
               {orderData.orderItems?.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-muted/50 p-4 rounded-lg flex items-center justify-between"
-                >
-                  <div className="flex items-center space-x-4">
-                    {item.book?.imageUrl ? (
-                      <img
-                        src={item.book.imageUrl}
-                        alt={item.book.title}
-                        className="w-16 h-20 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-16 h-20 bg-muted rounded flex items-center justify-center">
-                        <Package className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div>
-                      <h5 className="font-medium">{item.book?.title}</h5>
-                      <p className="text-sm text-muted-foreground">
-                        by {item.book?.author || "Unknown"}
-                      </p>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Badge variant="outline" className="text-xs">
-                          Book
-                        </Badge>
-                        <Badge variant="outline">
-                          {item.book?.productType}
-                        </Badge>
-                        {item.book?.productType === "digital" && (
-                          <Download className="w-4 h-4 text-muted-foreground" />
+                <div key={item.id} className="space-y-3">
+                  {/* Main Book Item */}
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        {item.book?.imageUrl ? (
+                          <img
+                            src={item.book.imageUrl}
+                            alt={item.book.title}
+                            className="w-16 h-20 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-16 h-20 bg-muted rounded flex items-center justify-center">
+                            <Package className="w-6 h-6 text-muted-foreground" />
+                          </div>
                         )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h5 className="font-medium">{item.book?.title}</h5>
+                            {item.book?.isBundled && (
+                              <Badge
+                                variant="secondary"
+                                className="bg-purple-100 text-purple-800 text-xs"
+                              >
+                                Bundle
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            by {item.book?.author || "Unknown"}
+                          </p>
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="outline" className="text-xs">
+                              Book
+                            </Badge>
+                            <Badge variant="outline">
+                              {item.book?.productType}
+                            </Badge>
+                            {item.book?.productType === "digital" && (
+                              <Download className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <p className="font-medium">
+                            ${Number(item.price).toFixed(2)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Qty: {item.quantity}
+                          </p>
+                          <p className="text-sm font-medium">
+                            ${(Number(item.price) * item.quantity).toFixed(2)}
+                          </p>
+                        </div>
                       </div>
                     </div>
+
+                    <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
+                      {/* Link to Book Details */}
+                      <Button asChild size="sm" variant="outline">
+                        <Link
+                          target="_blank"
+                          href={`/books/${item.book?.id}`}
+                          className="text-sm text-blue-600 hover:underline"
+                        >
+                          View Details
+                        </Link>
+                      </Button>
+
+                      {/* Download Button for Digital Items */}
+                      {item.book?.productType === "digital" &&
+                        item.book?.downloadUrl && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={
+                              !isPaymentPaid ||
+                              downloadingItems.has(item.book?.id || "")
+                            }
+                            onClick={() =>
+                              handleDownload(
+                                item.book?.id || "",
+                                item.book?.title || "",
+                                "book"
+                              )
+                            }
+                            className="gap-2"
+                          >
+                            {downloadingItems.has(item.book?.id || "") ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Downloading...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-4 h-4" />
+                                Download
+                              </>
+                            )}
+                          </Button>
+                        )}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">
-                      ${Number(item.price).toFixed(2)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Qty: {item.quantity}
-                    </p>
-                    <p className="text-sm font-medium">
-                      ${(Number(item.price) * item.quantity).toFixed(2)}
-                    </p>
-                  </div>
+
+                  {/* Bundle Items */}
+                  {item.book?.isBundled &&
+                    item.book?.bundleItems &&
+                    item.book.bundleItems.length > 0 && (
+                      <div className="ml-8 space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">
+                          📦 Bundle includes {item.book.bundleItems.length}{" "}
+                          items:
+                        </p>
+                        {item.book.bundleItems.map((bundleItem: any) => (
+                          <div
+                            key={bundleItem.id}
+                            className="bg-muted/30 p-3 rounded-lg border border-dashed"
+                          >
+                            <div className="flex items-center justify-between">
+                              <Link
+                                href={`/books/${bundleItem.id}`}
+                                target="_blank"
+                                className="flex items-center space-x-3 flex-1"
+                              >
+                                {bundleItem.imageUrl ? (
+                                  <img
+                                    src={bundleItem.imageUrl}
+                                    alt={bundleItem.title}
+                                    className="w-10 h-12 object-cover rounded"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-12 bg-muted rounded flex items-center justify-center">
+                                    <Package className="w-4 h-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div className="flex-1">
+                                  <p className="font-medium text-sm">
+                                    {bundleItem.title}
+                                  </p>
+                                  {bundleItem.author && (
+                                    <p className="text-xs text-muted-foreground">
+                                      by {bundleItem.author}
+                                    </p>
+                                  )}
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {bundleItem.productType}
+                                    </Badge>
+                                    {bundleItem.format && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {bundleItem.format}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </Link>
+                              {/* Download Button for Digital Bundle Items */}
+                              {bundleItem.productType === "digital" &&
+                                bundleItem.downloadUrl && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={
+                                      !isPaymentPaid ||
+                                      downloadingItems.has(bundleItem.id)
+                                    }
+                                    onClick={() =>
+                                      handleDownload(
+                                        bundleItem.id,
+                                        bundleItem.title,
+                                        "book"
+                                      )
+                                    }
+                                    className="gap-1 h-8"
+                                  >
+                                    {downloadingItems.has(bundleItem.id) ? (
+                                      <>
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                        Downloading...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Download className="w-3 h-3" />
+                                        Download
+                                      </>
+                                    )}
+                                  </Button>
+                                )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                 </div>
               ))}
 
               {/* Shop Items */}
               {orderData.shopOrderItems?.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-muted/50 p-4 rounded-lg flex items-center justify-between"
-                >
-                  <div className="flex items-center space-x-4">
-                    {item.storeProduct?.imageUrl ? (
-                      <img
-                        src={item.storeProduct.imageUrl}
-                        alt={item.storeProduct.title}
-                        className="w-16 h-20 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-16 h-20 bg-muted rounded flex items-center justify-center">
-                        <ShoppingBag className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div>
-                      <h5 className="font-medium">
-                        {item.storeProduct?.title}
-                      </h5>
-                      <p className="text-sm text-muted-foreground">
-                        Store Product
-                      </p>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Badge variant="outline" className="text-xs">
-                          Shop
-                        </Badge>
-                        <Badge variant="outline">
-                          {item.storeProduct?.productType}
-                        </Badge>
-                        {item.storeProduct?.productType === "digital" && (
-                          <Download className="w-4 h-4 text-muted-foreground" />
-                        )}
+                <div key={item.id} className="bg-muted/50 p-4 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      {item.storeProduct?.imageUrl ? (
+                        <img
+                          src={item.storeProduct.imageUrl}
+                          alt={item.storeProduct.title}
+                          className="w-16 h-20 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-16 h-20 bg-muted rounded flex items-center justify-center">
+                          <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div>
+                        <h5 className="font-medium">
+                          {item.storeProduct?.title}
+                        </h5>
+                        <p className="text-sm text-muted-foreground">
+                          Store Product
+                        </p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            Shop
+                          </Badge>
+                          <Badge variant="outline">
+                            {item.storeProduct?.productType}
+                          </Badge>
+                          {item.storeProduct?.productType === "digital" && (
+                            <Download className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </div>
                       </div>
                     </div>
+
+                    <div className="text-right">
+                      <p className="font-medium">
+                        ${Number(item.price).toFixed(2)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Qty: {item.quantity}
+                      </p>
+                      <p className="text-sm font-medium">
+                        ${(Number(item.price) * item.quantity).toFixed(2)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">
-                      ${Number(item.price).toFixed(2)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Qty: {item.quantity}
-                    </p>
-                    <p className="text-sm font-medium">
-                      ${(Number(item.price) * item.quantity).toFixed(2)}
-                    </p>
+
+                  <div className="mt-3 flex items-center justify-between flex-wrap gap-2 w-full">
+                    {/* Link to Book Details */}
+                    <Button asChild size="sm" variant="outline">
+                      <Link
+                        target="_blank"
+                        href={`/shop/${item.storeProduct?.id}`}
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        View Details
+                      </Link>
+                    </Button>
+                    {/* Download Button for Digital Shop Items */}
+                    {item.storeProduct?.productType === "digital" &&
+                      item.storeProduct?.downloadUrl && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={
+                            !isPaymentPaid ||
+                            downloadingItems.has(item.storeProduct?.id || "")
+                          }
+                          onClick={() =>
+                            handleDownload(
+                              item.storeProduct?.id || "",
+                              item.storeProduct?.title || "",
+                              "shop"
+                            )
+                          }
+                          className="gap-2"
+                        >
+                          {downloadingItems.has(item.storeProduct?.id || "") ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Downloading...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="w-4 h-4" />
+                              Download
+                            </>
+                          )}
+                        </Button>
+                      )}
                   </div>
                 </div>
               ))}
@@ -554,150 +753,6 @@ const OrderModal: React.FC<OrderModalProps> = ({
                 <p className="text-sm text-muted-foreground">
                   Payment information will appear here once processed
                 </p>
-              </div>
-            </div>
-          )}
-
-          {/* Digital Downloads */}
-          {(orderData.orderItems?.some(
-            (item) =>
-              item.book?.productType === "digital" && item.book?.downloadUrl
-          ) ||
-            orderData.shopOrderItems?.some(
-              (item) =>
-                item.storeProduct?.productType === "digital" &&
-                item.storeProduct?.downloadUrl
-            )) && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-medium">Digital Downloads</h4>
-              <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                {orderData.orderItems
-                  ?.filter(
-                    (item) =>
-                      item.book?.productType === "digital" &&
-                      item.book?.downloadUrl
-                  )
-                  .map((item) => (
-                    <div
-                      key={`download-${item.id}`}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Download className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{item.book?.title}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {item.book?.format && `Format: ${item.book.format}`}
-                            {item.book?.fileSize &&
-                              ` • Size: ${item.book.fileSize}`}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline">Available</Badge>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={
-                            !isPaymentPaid ||
-                            downloadingItems.has(item.book?.id || "")
-                          }
-                          onClick={() =>
-                            handleDownload(
-                              item.book?.id || "",
-                              item.book?.title || "",
-                              "book"
-                            )
-                          }
-                        >
-                          {downloadingItems.has(item.book?.id || "") ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Downloading...
-                            </>
-                          ) : (
-                            <>
-                              <Download className="w-4 h-4 mr-2" />
-                              Download
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                {orderData.shopOrderItems
-                  ?.filter(
-                    (item) =>
-                      item.storeProduct?.productType === "digital" &&
-                      item.storeProduct?.downloadUrl
-                  )
-                  .map((item) => (
-                    <div
-                      key={`download-${item.id}`}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Download className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">
-                            {item.storeProduct?.title}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {item.storeProduct?.format &&
-                              `Format: ${item.storeProduct.format}`}
-                            {item.storeProduct?.fileSize &&
-                              ` • Size: ${item.storeProduct.fileSize}`}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline">Available</Badge>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={
-                            !isPaymentPaid ||
-                            downloadingItems.has(item.storeProduct?.id || "")
-                          }
-                          onClick={() =>
-                            handleDownload(
-                              item.storeProduct?.id || "",
-                              item.storeProduct?.title || "",
-                              "shop"
-                            )
-                          }
-                        >
-                          {downloadingItems.has(item.storeProduct?.id || "") ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Downloading...
-                            </>
-                          ) : (
-                            <>
-                              <Download className="w-4 h-4 mr-2" />
-                              Download
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-
-                {!isPaymentPaid && (
-                  <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <p className="text-sm text-orange-700">
-                      Downloads will be available once payment is confirmed as
-                      successful.
-                    </p>
-                  </div>
-                )}
-
-                {isPaymentPaid && (
-                  <p className="text-xs text-muted-foreground">
-                    Download links will remain active for 30 days from purchase
-                    date.
-                  </p>
-                )}
               </div>
             </div>
           )}

@@ -81,7 +81,20 @@ const OrdersPage = () => {
   };
 
   const canDownload = (order: Order) => {
-    return order.status === "completed" && isPaymentCompleted(order);
+    // Check if payment is completed/paid (same logic as success page)
+    const isPaymentPaid =
+      order.payment &&
+      order.payment.length > 0 &&
+      order.payment.some((payment) =>
+        ["succeeded", "paid", "complete"].includes(payment.status.toLowerCase())
+      );
+
+    return (
+      (order.status === "completed" ||
+        order.status === "processing" ||
+        order.status === "shipped") &&
+      isPaymentPaid
+    );
   };
 
   const handleDownload = async (
@@ -90,15 +103,21 @@ const OrdersPage = () => {
     itemTitle: string,
     itemType: "book" | "shop"
   ) => {
-    if (!canDownload(orders.find((o) => o.id === orderId)!)) {
-      toast.error("Downloads are only available for completed, paid orders");
+    const order = orders.find((o) => o.id === orderId);
+    if (!order || !canDownload(order)) {
+      toast.error(
+        "Downloads are only available for completed orders with successful payment"
+      );
       return;
     }
 
     setDownloadingItems((prev) => new Set(prev).add(itemId));
 
     try {
+      // Use the server action to get the download URL
       const result = await downloadItem(orderId, itemId, itemType);
+
+      console.log("Download result:", result);
 
       if (result.error) {
         console.error("Download failed:", result.error);
@@ -107,8 +126,17 @@ const OrdersPage = () => {
       }
 
       if (result.success && result.downloadUrl) {
-        // Open download URL in new window/tab to trigger download
-        window.open(result.downloadUrl, "_blank");
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement("a");
+        link.href = await result.downloadUrl;
+        link.download = `${itemTitle}.${result.fileFormat || "file"}`;
+        link.target = "_blank";
+
+        // Append to body, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
         toast.success(`Downloading ${itemTitle}...`);
       } else {
         toast.error("Download URL not available");
@@ -173,53 +201,126 @@ const OrdersPage = () => {
     productType: "book" | "shop",
     order: Order
   ) => (
-    <div
-      key={item.id}
-      className="flex items-center space-x-4 p-3 border rounded-lg"
-    >
-      {product.imageUrl ? (
-        <img
-          src={product.imageUrl}
-          alt={product.title}
-          className="w-12 h-16 object-cover rounded"
-        />
-      ) : (
-        <div className="w-12 h-16 bg-muted rounded flex items-center justify-center">
-          <Package className="w-4 h-4 text-muted-foreground" />
-        </div>
-      )}
-      <div className="flex-1 space-y-1">
-        <h6 className="font-medium">{product.title}</h6>
-        {productType === "book" && product.author && (
-          <p className="text-sm text-muted-foreground">by {product.author}</p>
+    <div key={item.id} className="space-y-3">
+      {/* Main Item */}
+      <div className="flex items-center space-x-4 p-3 border rounded-lg">
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.title}
+            className="w-12 h-16 object-cover rounded"
+          />
+        ) : (
+          <div className="w-12 h-16 bg-muted rounded flex items-center justify-center">
+            <Package className="w-4 h-4 text-muted-foreground" />
+          </div>
         )}
-        <div className="flex items-center space-x-4">
-          <Badge variant="outline">{product.productType}</Badge>
-          <span className="text-sm">Qty: {item.quantity}</span>
-          <span className="text-sm font-medium">
-            {formatPrice(Number(item.price))}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            Total: {formatPrice(Number(item.price) * item.quantity)}
-          </span>
-        </div>
-      </div>
-      {product.productType === "digital" && canDownload(order) && (
-        <Button
-          size="sm"
-          onClick={() =>
-            handleDownload(order.id, product.id!, product.title, productType)
-          }
-          disabled={downloadingItems.has(product.id)}
-          className="shrink-0"
-        >
-          {downloadingItems.has(product.id) ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
+        <div className="flex-1 space-y-1">
+          <h6 className="font-medium">{product.title}</h6>
+          {productType === "book" && product.author && (
+            <p className="text-sm text-muted-foreground">by {product.author}</p>
           )}
-        </Button>
-      )}
+          <div className="flex items-center space-x-4">
+            <Badge variant="outline">{product.productType}</Badge>
+            {product.isBundled && (
+              <Badge
+                variant="secondary"
+                className="bg-purple-100 text-purple-800"
+              >
+                Bundle
+              </Badge>
+            )}
+            <span className="text-sm">Qty: {item.quantity}</span>
+            <span className="text-sm font-medium">
+              {formatPrice(Number(item.price))}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Total: {formatPrice(Number(item.price) * item.quantity)}
+            </span>
+          </div>
+        </div>
+        {product.productType === "digital" && canDownload(order) && (
+          <Button
+            size="sm"
+            onClick={() =>
+              handleDownload(order.id, product.id!, product.title, productType)
+            }
+            disabled={downloadingItems.has(product.id)}
+            className="shrink-0"
+          >
+            {downloadingItems.has(product.id) ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+          </Button>
+        )}
+      </div>
+
+      {/* Bundle Items */}
+      {product.isBundled &&
+        product.bundleItems &&
+        product.bundleItems.length > 0 && (
+          <div className="ml-8 space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">
+              Bundle includes {product.bundleItems.length} items:
+            </p>
+            {product.bundleItems.map((bundleItem: any) => {
+              return (
+                <div
+                  key={bundleItem.id}
+                  className="flex items-center space-x-4 p-2 bg-muted/30 rounded-lg border border-dashed"
+                >
+                  {bundleItem.imageUrl ? (
+                    <img
+                      src={bundleItem.imageUrl}
+                      alt={bundleItem.title}
+                      className="w-8 h-10 object-cover rounded"
+                    />
+                  ) : (
+                    <div className="w-8 h-10 bg-muted rounded flex items-center justify-center">
+                      <Package className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-1">
+                    <h6 className="font-medium text-sm">{bundleItem.title}</h6>
+                    {bundleItem.author && (
+                      <p className="text-xs text-muted-foreground">
+                        by {bundleItem.author}
+                      </p>
+                    )}
+                    <Badge variant="outline" className="text-xs">
+                      {bundleItem.productType}
+                    </Badge>
+                  </div>
+                  {bundleItem.productType === "digital" &&
+                    canDownload(order) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          handleDownload(
+                            order.id,
+                            bundleItem.id,
+                            bundleItem.title,
+                            "book"
+                          )
+                        }
+                        disabled={downloadingItems.has(bundleItem.id)}
+                        className="shrink-0 h-8"
+                      >
+                        {downloadingItems.has(bundleItem.id) ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Download className="h-3 w-3" />
+                        )}
+                      </Button>
+                    )}
+                </div>
+              );
+            })}
+          </div>
+        )}
     </div>
   );
 
@@ -534,13 +635,20 @@ const OrdersPage = () => {
                       canDownload(order) && (
                         <div className="space-y-2">
                           <h4 className="text-sm font-medium text-muted-foreground">
-                            Digital Downloads (
-                            {orderSummary.allDigitalItems.length})
+                            Digital Downloads
                           </h4>
                           <div className="flex flex-wrap gap-2">
-                            {orderSummary.allDigitalItems
-                              .slice(0, 3)
-                              .map((item) => {
+                            {(() => {
+                              // Collect all unique downloadable items including bundle items
+                              const allDownloadableItems: Array<{
+                                id: string;
+                                title: string;
+                                type: "book" | "shop";
+                                isBundle?: boolean;
+                              }> = [];
+
+                              // Add main digital items
+                              orderSummary.allDigitalItems.forEach((item) => {
                                 let product;
                                 let itemType: "book" | "shop";
 
@@ -554,52 +662,99 @@ const OrdersPage = () => {
                                   product = item.storeProduct;
                                   itemType = "shop";
                                 } else {
-                                  return null;
+                                  return;
                                 }
 
-                                if (!product.id) return null;
+                                if (!product.id) return;
 
-                                const isDownloading = downloadingItems.has(
-                                  product.id
-                                );
+                                allDownloadableItems.push({
+                                  id: product.id,
+                                  title: product.title,
+                                  type: itemType,
+                                  isBundle:
+                                    itemType === "book" &&
+                                    (product as any).isBundled,
+                                });
 
-                                return (
-                                  <Button
-                                    key={product.id}
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                      handleDownload(
-                                        order.id,
-                                        product.id!,
-                                        product.title,
-                                        itemType
-                                      )
+                                // Add bundle items if this is a book bundle
+                                if (
+                                  itemType === "book" &&
+                                  (product as any).isBundled &&
+                                  (product as any).bundleItems &&
+                                  (product as any).bundleItems.length > 0
+                                ) {
+                                  (product as any).bundleItems.forEach(
+                                    (bundleItem: any) => {
+                                      if (
+                                        bundleItem.productType === "digital" &&
+                                        bundleItem.id
+                                      ) {
+                                        allDownloadableItems.push({
+                                          id: bundleItem.id,
+                                          title: bundleItem.title,
+                                          type: "book",
+                                          isBundle: false,
+                                        });
+                                      }
                                     }
-                                    disabled={isDownloading}
-                                    className="text-xs"
-                                  >
-                                    {isDownloading ? (
-                                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                                    ) : (
-                                      <Download className="h-3 w-3 mr-1" />
-                                    )}
-                                    {product.title.length > 20
-                                      ? `${product.title.slice(0, 20)}...`
-                                      : product.title}
-                                  </Button>
-                                );
-                              })}
-                            {orderSummary.allDigitalItems.length > 3 && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => toggleOrderExpansion(order.id)}
-                                className="text-xs"
-                              >
-                                +{orderSummary.allDigitalItems.length - 3} more
-                              </Button>
-                            )}
+                                  );
+                                }
+                              });
+
+                              // Remove duplicates based on ID
+                              const uniqueItems = allDownloadableItems.filter(
+                                (item, index, self) =>
+                                  index ===
+                                  self.findIndex((t) => t.id === item.id)
+                              );
+
+                              return (
+                                <>
+                                  <p className="text-xs text-muted-foreground mb-2">
+                                    {uniqueItems.length} downloadable item
+                                    {uniqueItems.length !== 1 ? "s" : ""}{" "}
+                                    available
+                                  </p>
+                                  {uniqueItems.map((item) => {
+                                    const isDownloading = downloadingItems.has(
+                                      item.id
+                                    );
+
+                                    return (
+                                      <Button
+                                        key={item.id}
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                          handleDownload(
+                                            order.id,
+                                            item.id,
+                                            item.title,
+                                            item.type
+                                          )
+                                        }
+                                        disabled={isDownloading}
+                                        className="text-xs"
+                                      >
+                                        {isDownloading ? (
+                                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                        ) : (
+                                          <Download className="h-3 w-3 mr-1" />
+                                        )}
+                                        {item.isBundle && (
+                                          <span className="text-purple-600 mr-1">
+                                            📦
+                                          </span>
+                                        )}
+                                        {item.title.length > 20
+                                          ? `${item.title.slice(0, 20)}...`
+                                          : item.title}
+                                      </Button>
+                                    );
+                                  })}
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
                       )}

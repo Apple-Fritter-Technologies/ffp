@@ -138,9 +138,6 @@ export async function GET(req: NextRequest) {
       where: { status: "cancelled" },
     });
 
-    // Get orders that need fulfillment (pending + processing)
-    const ordersNeedingFulfillment = pendingOrders + processingOrders;
-
     // Get orders with physical items that need shipping
     const ordersNeedingShipping = await prisma.order.count({
       where: {
@@ -183,7 +180,6 @@ export async function GET(req: NextRequest) {
         shippedOrders,
         completedOrders,
         cancelledOrders,
-        ordersNeedingFulfillment,
         ordersNeedingShipping,
         averageOrderValue,
       },

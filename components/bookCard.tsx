@@ -25,6 +25,12 @@ function BookCard({ book }: { book: Book }) {
       description: book.description || undefined,
       productType: book.productType,
       itemType: "book",
+      genreId: book.genreId,
+      genreName: book.genre?.name,
+      isBundled: book.isBundled,
+      bundleItems: book.bundleItems,
+      bundleItemsCount: book.bundleItems?.length || 0,
+      bundleType: book.isBundled ? "Book Bundle" : undefined,
     });
     toast.success(`${book.title} added to cart!`);
   };

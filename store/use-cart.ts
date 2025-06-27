@@ -78,6 +78,11 @@ export const useCart = create<CartState>()(
                   productType: item.productType || "physical",
                   itemType: item.itemType || "book", // Default to book for backward compatibility
                   genreId: item.genreId || undefined,
+                  genreName: item.genreName || undefined,
+                  isBundled: item.isBundled || false,
+                  bundleItems: item.bundleItems || undefined,
+                  bundleItemsCount: item.bundleItemsCount || 0,
+                  bundleType: item.bundleType || undefined,
                 },
               ],
             }));

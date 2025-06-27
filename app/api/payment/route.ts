@@ -143,21 +143,6 @@ export async function POST(req: NextRequest) {
         quantity: item.quantity,
       }));
 
-    // Add shipping if physical items exist
-    // if (cartData.hasPhysicalItems) {
-    //   lineItems.push({
-    //     price_data: {
-    //       currency: "usd",
-    //       product_data: {
-    //         name: "Shipping",
-    //         description: "Standard shipping",
-    //       },
-    //       unit_amount: 500, // $5.00 shipping
-    //     },
-    //     quantity: 1,
-    //   });
-    // }
-
     // Prepare base session creation parameters
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ["card"],

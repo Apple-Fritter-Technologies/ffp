@@ -98,8 +98,11 @@ export interface CartItem {
   productType?: "physical" | "digital";
   itemType?: "book" | "shop"; // New field to distinguish between books and shop products
   genreId?: string; // For books only
+  genreName?: string; // Genre name for display
   isBundled?: boolean; // Whether this item is a bundle
   bundleItems?: Book[]; // Items included in bundle (if this is a bundle)
+  bundleItemsCount?: number; // Number of items in bundle (for display)
+  bundleType?: string; // Type of bundle (e.g., "Book Bundle", "Complete Series")
 }
 
 export interface Podcast {
@@ -190,7 +193,6 @@ export interface DashboardData {
   completedOrders: number;
   cancelledOrders: number;
   ordersNeedingFulfillment: number;
-  ordersNeedingShipping: number;
   averageOrderValue: number;
 }
 

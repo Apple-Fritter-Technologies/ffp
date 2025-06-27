@@ -488,6 +488,8 @@ const BookModal: React.FC<BookModalProps> = ({
                       .filter((bookItem) => {
                         // Don't show the current book being edited
                         if (isEdit && bookItem.id === book?.id) return false;
+                        // Don't show bundle items in bundle selection
+                        if (bookItem.isBundled) return false;
                         // If this is a digital bundle, only show digital books
                         if (formData.productType === "digital") {
                           return bookItem.productType === "digital";

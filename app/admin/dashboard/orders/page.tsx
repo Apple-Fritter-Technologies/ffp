@@ -172,7 +172,7 @@ const DashboardOrdersPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-4 mb-6">
+          <div className="flex items-center space-x-4 mb-6 flex-wrap gap-2">
             <div className="flex items-center space-x-2">
               <Search className="w-4 h-4" />
               <Input

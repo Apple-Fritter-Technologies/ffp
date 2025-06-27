@@ -104,15 +104,6 @@ export default function DashboardPage() {
       trend: (data?.processingOrders || 0) > 0 ? "warning" : "neutral",
     },
     {
-      title: "Physical Orders to Ship",
-      value: data?.ordersNeedingShipping || 0,
-      description: "Processing orders with physical items",
-      icon: <ShoppingCartIcon size={20} />,
-      color: "bg-orange-500/10 text-orange-500 border-orange-200",
-      urgent: (data?.ordersNeedingShipping || 0) > 0,
-      trend: (data?.ordersNeedingShipping || 0) > 0 ? "warning" : "neutral",
-    },
-    {
       title: "Pending Payment",
       value: data?.pendingOrders || 0,
       description: "Orders awaiting payment completion",
@@ -413,7 +404,7 @@ export default function DashboardPage() {
               Track orders through the fulfillment pipeline
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {fulfillmentStats.map((stat, index) => (
               <motion.div
                 key={stat.title}

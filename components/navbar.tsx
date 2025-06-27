@@ -177,15 +177,7 @@ const Navbar = () => {
                 </button>
               }
             />
-            <Link
-              href="/cart"
-              className="text-accent-2 hover:text-accent-1 transition-colors relative"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              <span className="absolute -top-2 -right-2 w-4 h-4 bg-accent-1 text-foreground rounded-full text-xs flex items-center justify-center font-medium">
-                0
-              </span>
-            </Link>
+            <CartButton />
 
             <SignedIn>
               <ClerkUserButton />

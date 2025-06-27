@@ -30,8 +30,8 @@ import { createPaymentSession } from "@/hooks/actions/payment-action";
 import { getAddresses } from "@/hooks/actions/address-actions";
 import { loadStripe } from "@stripe/stripe-js";
 import { toast } from "sonner";
-import { prepareUnifiedOrderData } from "@/lib/checkout-helpers";
-import { getCartItemDisplayInfo } from "@/lib/cart-helpers";
+import { getOrderSummary } from "@/lib/checkout-helpers";
+import { getCartItemDisplayInfo, getCartSummary } from "@/lib/cart-helpers";
 import { createOrder } from "@/hooks/actions/order-action";
 import { formatPrice } from "@/lib/utils";
 
@@ -45,19 +45,14 @@ interface ShippingAddress {
   phone: string;
 }
 
-interface OrderResult {
-  id: string;
-  error?: string;
-}
-
 // Load Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 
 const CheckoutPage = () => {
   const {
     items,
-
     totalItems,
+    totalPrice,
     hasPhysicalItems,
     hasDigitalItems,
     getPhysicalItems,
@@ -89,6 +84,11 @@ const CheckoutPage = () => {
   const [existingAddresses, setExistingAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
 
+  // Get cart summary information
+  const cartSummary = getCartSummary();
+  const orderSummary = getOrderSummary(items);
+
+  // Individual item arrays for detailed display
   const physicalItems = getPhysicalItems();
   const digitalItems = getDigitalItems();
   const bookItems = getBookItems();
@@ -192,28 +192,23 @@ const CheckoutPage = () => {
     console.log("Processing unified checkout for all items:", items);
 
     try {
-      // Prepare cart data for payment session
-      const cartData = {
+      // Prepare cart data for order creation - format for API
+      const orderData = {
         items: items.map((item) => ({
           id: item.id,
-          title: item.title,
-          price: item.price,
-          quantity: item.quantity,
           itemType: item.itemType,
-          productType: item.productType,
-          image: item.image,
-          author: item.author,
-          description: item.description,
-          genreId: item.genreId,
+          quantity: item.quantity,
+          price: item.price,
         })),
-        totalPrice: items.reduce(
-          (sum, item) => sum + item.price * item.quantity,
-          0
-        ),
+        totalPrice,
         hasPhysicalItems: hasPhysical,
-        userId: user?.id,
-        shippingAddress: hasPhysical
-          ? useDefaultAddress || showAllAddresses
+        shippingAddress: null as any,
+      };
+
+      // Add shipping address if needed
+      if (hasPhysical) {
+        orderData.shippingAddress =
+          useDefaultAddress || showAllAddresses
             ? (() => {
                 const addr = existingAddresses.find(
                   (addr) => addr.id === selectedAddressId
@@ -239,32 +234,60 @@ const CheckoutPage = () => {
                 zipCode: shippingAddress.zipCode,
                 country: shippingAddress.country,
                 phone: shippingAddress.phone,
-              }
-          : null,
-      };
+              };
+      }
 
-      const orderResult: OrderResult = await createOrder(cartData);
+      console.log("Creating order with data:", orderData);
+
+      // Create the order first
+      const orderResult = await createOrder(orderData);
 
       if (orderResult.error) {
         throw new Error(orderResult.error);
       }
 
+      console.log("Order created successfully:", orderResult.id);
+
+      // Create payment session for the order
       const paymentResult = await createPaymentSession(orderResult.id);
 
       if (paymentResult.error) {
         throw new Error(paymentResult.error);
       }
 
+      console.log("Payment session created:", paymentResult.sessionId);
+
       // Store order info in session storage for success page
       sessionStorage.setItem(
         "orderInfo",
         JSON.stringify({
           orderId: orderResult.id,
-          items: cartData.items,
-          totalPrice: cartData.totalPrice,
-          shippingAddress: cartData.shippingAddress,
+          items: items.map((item) => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+            itemType: item.itemType,
+            productType: item.productType,
+            image: item.image,
+            author: item.author,
+            description: item.description,
+            genreId: item.genreId,
+            genreName: item.genreName,
+            isBundled: item.isBundled,
+            bundleItemsCount: item.bundleItemsCount,
+            bundleType: item.bundleType,
+          })),
+          totalPrice: totalPrice,
+          shippingAddress: orderData.shippingAddress,
           sessionId: paymentResult.sessionId,
-          orderType: hasPhysical ? "mixed" : "digital",
+          orderType: hasPhysical
+            ? hasDigital
+              ? "mixed"
+              : "physical"
+            : "digital",
+          hasPhysicalItems: hasPhysical,
+          hasDigitalItems: hasDigital,
         })
       );
 
@@ -278,18 +301,23 @@ const CheckoutPage = () => {
         if (stripeError) {
           console.error("Stripe redirect error:", stripeError);
           setError("Failed to redirect to payment. Please try again.");
+          // If redirect fails, we should restore the cart
+          // Note: In a real app, you might want to reload the cart from the order
+          toast.error(
+            "Failed to redirect to payment. Please refresh and try again."
+          );
         }
       } else {
-        throw new Error("Failed to initialize Stripe");
+        throw new Error("Failed to initialize Stripe payment system");
       }
     } catch (error) {
       console.error("Checkout error:", error);
-      setError(
+      const errorMessage =
         error instanceof Error
           ? error.message
-          : "Failed to process checkout. Please try again."
-      );
-      toast.error("Checkout failed. Please try again.");
+          : "Failed to process checkout. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -317,63 +345,113 @@ const CheckoutPage = () => {
     return (
       <div
         key={`${item.id}-${item.itemType}`}
-        className="flex items-center space-x-3 p-3 border rounded-lg bg-muted/30"
+        className="flex items-start space-x-3 p-4 border rounded-lg bg-muted/30"
       >
         {item.image && (
           <img
             src={item.image}
             alt={item.title}
-            className="w-16 h-20 object-cover rounded"
+            className="w-16 h-20 object-cover rounded flex-shrink-0"
           />
         )}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-2">
-            <h4 className="font-medium text-sm truncate">{item.title}</h4>
-            <div className="flex items-center space-x-1">
-              {renderItemTypeIcon(item.itemType)}
-              {renderProductTypeIcon(item.productType)}
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h4 className="font-medium text-sm truncate">{item.title}</h4>
+                <div className="flex items-center space-x-1">
+                  {renderItemTypeIcon(item.itemType)}
+                  {renderProductTypeIcon(item.productType)}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <Badge
+                  variant={
+                    displayInfo.badgeVariant as
+                      | "default"
+                      | "secondary"
+                      | "destructive"
+                      | "outline"
+                  }
+                  className="text-xs"
+                >
+                  {displayInfo.badgeText}
+                </Badge>
+                {item.productType && (
+                  <Badge
+                    variant={
+                      item.productType === "digital" ? "outline" : "secondary"
+                    }
+                    className="text-xs"
+                  >
+                    {item.productType}
+                  </Badge>
+                )}
+                {item.isBundled && (
+                  <Badge variant="default" className="text-xs">
+                    Bundle ({item.bundleItemsCount || 0} items)
+                  </Badge>
+                )}
+              </div>
+
+              {displayInfo.showAuthor && item.author && (
+                <p className="text-xs text-muted-foreground mb-1">
+                  by {item.author}
+                </p>
+              )}
+
+              {displayInfo.showGenre && item.genreName && (
+                <p className="text-xs text-muted-foreground mb-1">
+                  Genre: {item.genreName}
+                </p>
+              )}
+
+              {item.isBundled &&
+                item.bundleItems &&
+                item.bundleItems.length > 0 && (
+                  <div className="text-xs text-muted-foreground mb-1">
+                    <p className="font-medium">Bundle includes:</p>
+                    <ul className="list-disc list-inside ml-2 space-y-1">
+                      {item.bundleItems
+                        .slice(0, 3)
+                        .map((bundleItem: any, index: number) => (
+                          <li key={index} className="truncate">
+                            {bundleItem.title}
+                          </li>
+                        ))}
+                      {item.bundleItems.length > 3 && (
+                        <li className="text-muted-foreground/80">
+                          +{item.bundleItems.length - 3} more items
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+
+              {item.description && (
+                <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                  {item.description}
+                </p>
+              )}
+
+              <p className="text-sm font-medium text-foreground">
+                {formatPrice(item.price)} each
+              </p>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-2 mb-1">
-            <Badge
-              variant={
-                displayInfo.badgeVariant as
-                  | "default"
-                  | "secondary"
-                  | "destructive"
-                  | "outline"
-              }
-              className="text-xs"
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => removeItem(item.id, item.itemType)}
+              className="h-7 w-7 p-0 text-destructive hover:text-destructive flex-shrink-0"
+              disabled={isLoading}
             >
-              {displayInfo.badgeText}
-            </Badge>
-            {item.productType && (
-              <Badge
-                variant={
-                  item.productType === "digital" ? "outline" : "secondary"
-                }
-                className="text-xs"
-              >
-                {item.productType}
-              </Badge>
-            )}
+              <Trash2 className="h-3 w-3" />
+            </Button>
           </div>
 
-          {displayInfo.showAuthor && item.author && (
-            <p className="text-xs text-muted-foreground">by {item.author}</p>
-          )}
-
-          {item.description && (
-            <p className="text-xs text-muted-foreground mb-1 truncate">
-              {item.description}
-            </p>
-          )}
-
-          <p className="text-sm text-muted-foreground">
-            {formatPrice(item.price)} each
-          </p>
-          <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
@@ -401,19 +479,15 @@ const CheckoutPage = () => {
                 <Plus className="h-3 w-3" />
               </Button>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="font-medium text-sm">
+            <div className="text-right">
+              <p className="font-semibold text-sm">
                 {formatPrice(item.price * item.quantity)}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeItem(item.id, item.itemType)}
-                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                disabled={isLoading}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              </p>
+              {item.quantity > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  {item.quantity} × {formatPrice(item.price)}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -483,13 +557,27 @@ const CheckoutPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="flex items-center space-x-2 mb-8">
-        <ShoppingCart className="h-8 w-8" />
-        <h1 className="text-3xl font-bold">Checkout</h1>
-        <div className="flex items-center space-x-2 ml-4">
-          {hasBooks && hasShop && <Badge variant="outline">Mixed Cart</Badge>}
-          {hasPhysical && hasDigital && (
+      <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex items-center space-x-2">
+          <ShoppingCart className="h-8 w-8" />
+          <h1 className="text-3xl font-bold">Checkout</h1>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="text-sm">
+            {totalItems} items • {formatPrice(totalPrice)}
+          </Badge>
+          {cartSummary.hasBooks && cartSummary.hasShopProducts && (
+            <Badge variant="outline">Mixed Cart</Badge>
+          )}
+          {cartSummary.hasPhysicalItems && cartSummary.hasDigitalItems && (
             <Badge variant="outline">Physical & Digital</Badge>
+          )}
+          {items.some((item) => item.isBundled) && (
+            <Badge variant="default">
+              {items.filter((item) => item.isBundled).length} Bundle
+              {items.filter((item) => item.isBundled).length > 1 ? "s" : ""}
+            </Badge>
           )}
         </div>
       </div>
@@ -500,31 +588,32 @@ const CheckoutPage = () => {
           {/* Order Items */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex items-center justify-between flex-wrap gap-2">
                 <span>Order Items ({totalItems})</span>
-                <div className="flex items-center space-x-2">
-                  {hasBooks && (
+                <div className="flex flex-wrap items-center gap-1">
+                  {orderSummary.hasBooks && (
                     <Badge variant="outline" className="text-xs">
                       <BookOpen className="h-3 w-3 mr-1" />
-                      Books
+                      {orderSummary.bookCount} Book
+                      {orderSummary.bookCount > 1 ? "s" : ""}
                     </Badge>
                   )}
-                  {hasShop && (
+                  {orderSummary.hasShopProducts && (
                     <Badge variant="outline" className="text-xs">
                       <Store className="h-3 w-3 mr-1" />
-                      Shop
+                      {orderSummary.shopCount} Shop
                     </Badge>
                   )}
-                  {hasPhysical && (
+                  {orderSummary.hasPhysicalItems && (
                     <Badge variant="outline" className="text-xs">
                       <Package className="h-3 w-3 mr-1" />
-                      Physical
+                      {orderSummary.physicalItemsCount} Physical
                     </Badge>
                   )}
-                  {hasDigital && (
+                  {orderSummary.hasDigitalItems && (
                     <Badge variant="outline" className="text-xs">
                       <Download className="h-3 w-3 mr-1" />
-                      Digital
+                      {orderSummary.digitalItemsCount} Digital
                     </Badge>
                   )}
                 </div>
@@ -772,7 +861,7 @@ const CheckoutPage = () => {
 
         {/* Right Column - Single Order Summary */}
         <div className="space-y-6">
-          <Card>
+          <Card className="top-28 sticky overscroll-auto">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <ShoppingCart className="h-5 w-5" />
@@ -783,14 +872,7 @@ const CheckoutPage = () => {
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal ({totalItems} items)</span>
-                  <span>
-                    {formatPrice(
-                      items.reduce(
-                        (sum, item) => sum + item.price * item.quantity,
-                        0
-                      )
-                    )}
-                  </span>
+                  <span>{formatPrice(totalPrice)}</span>
                 </div>
 
                 <div className="space-y-2 text-sm text-muted-foreground">
@@ -826,6 +908,66 @@ const CheckoutPage = () => {
                       </span>
                     </div>
                   )}
+
+                  {/* Show breakdown by product type if helpful */}
+                  {hasPhysical && hasDigital && (
+                    <>
+                      <Separator className="my-2" />
+                      <div className="flex justify-between">
+                        <span className="flex items-center space-x-1">
+                          <Package className="h-3 w-3" />
+                          <span>Physical Items ({physicalItems.length})</span>
+                        </span>
+                        <span>
+                          {formatPrice(
+                            physicalItems.reduce(
+                              (sum, item) => sum + item.price * item.quantity,
+                              0
+                            )
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="flex items-center space-x-1">
+                          <Download className="h-3 w-3" />
+                          <span>Digital Items ({digitalItems.length})</span>
+                        </span>
+                        <span>
+                          {formatPrice(
+                            digitalItems.reduce(
+                              (sum, item) => sum + item.price * item.quantity,
+                              0
+                            )
+                          )}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Show bundle information */}
+                  {items.some((item) => item.isBundled) && (
+                    <>
+                      <Separator className="my-2" />
+                      <div className="text-xs text-muted-foreground">
+                        <p className="font-medium mb-1">Bundle Details:</p>
+                        {items
+                          .filter((item) => item.isBundled)
+                          .map((bundleItem, index) => (
+                            <div key={index} className="flex justify-between">
+                              <span>
+                                {bundleItem.title} (
+                                {bundleItem.bundleItemsCount} items)
+                              </span>
+                              <span>
+                                {formatPrice(
+                                  bundleItem.price * bundleItem.quantity
+                                )}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {hasPhysical && (
@@ -838,14 +980,7 @@ const CheckoutPage = () => {
                 <Separator />
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span>
-                    {formatPrice(
-                      items.reduce(
-                        (sum, item) => sum + item.price * item.quantity,
-                        0
-                      ) + (hasPhysical ? 5 : 0)
-                    )}
-                  </span>
+                  <span>{formatPrice(totalPrice + (hasPhysical ? 5 : 0))}</span>
                 </div>
               </div>
 
@@ -861,6 +996,15 @@ const CheckoutPage = () => {
                     <Download className="h-4 w-4" />
                     <span>
                       Digital items will be available for immediate download
+                    </span>
+                  </div>
+                )}
+                {items.some((item) => item.isBundled) && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <BookOpen className="h-4 w-4" />
+                    <span>
+                      Bundle items include multiple books/products at a
+                      discounted price
                     </span>
                   </div>
                 )}

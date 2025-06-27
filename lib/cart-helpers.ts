@@ -15,6 +15,11 @@ export const addBookToCart = (book: Book) => {
     productType: book.productType,
     itemType: "book",
     genreId: book.genreId,
+    genreName: book.genre?.name,
+    isBundled: book.isBundled,
+    bundleItems: book.bundleItems,
+    bundleItemsCount: book.bundleItems?.length || 0,
+    bundleType: book.isBundled ? "Book Bundle" : undefined,
   });
 };
 
@@ -93,7 +98,14 @@ export const getCartItemDisplayInfo = (item: any) => {
     isBook,
     isShop,
     showAuthor: isBook && item.author,
-    showGenre: isBook && item.genreId,
+    showGenre: isBook && item.genreName,
+    showBundle: item.isBundled,
+    bundleInfo: item.isBundled
+      ? {
+          itemsCount: item.bundleItemsCount || 0,
+          type: item.bundleType || "Bundle",
+        }
+      : null,
     badgeText: isBook ? "Book" : "Product",
     badgeVariant: isBook ? "secondary" : ("default" as const),
     icon: isBook ? "📚" : "🛍️",

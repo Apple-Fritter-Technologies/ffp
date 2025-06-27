@@ -23,6 +23,7 @@ import {
 import { useRouter } from "next/navigation";
 import { getCartItemDisplayInfo } from "@/lib/cart-helpers";
 import { formatPrice } from "@/lib/utils";
+import { BundleDetails } from "./bundle-details";
 
 export function CartButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -130,7 +131,7 @@ export function CartButton() {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 mb-1">
+                  <div className="flex items-center flex-wrap gap-1 mb-2">
                     <Badge
                       variant={
                         displayInfo.badgeVariant as
@@ -155,6 +156,26 @@ export function CartButton() {
                         {item.productType}
                       </Badge>
                     )}
+
+                    {/* Genre Badge */}
+                    {displayInfo.showGenre && (
+                      <Badge
+                        variant="outline"
+                        className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                      >
+                        {item.genreName}
+                      </Badge>
+                    )}
+
+                    {/* Bundle Badge */}
+                    {displayInfo.showBundle && displayInfo.bundleInfo && (
+                      <BundleDetails
+                        bundleItems={item.bundleItems}
+                        bundleItemsCount={displayInfo.bundleInfo.itemsCount}
+                        bundleType={displayInfo.bundleInfo.type}
+                        isCompact={true}
+                      />
+                    )}
                   </div>
 
                   {displayInfo.showAuthor && (
@@ -163,17 +184,11 @@ export function CartButton() {
                     </p>
                   )}
 
-                  {item.description && (
-                    <p className="text-xs text-muted-foreground mb-1 truncate">
-                      {item.description}
-                    </p>
-                  )}
-
                   <p className="text-sm text-muted-foreground mb-2">
                     {formatPrice(item.price)} each
                   </p>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="outline"
@@ -269,8 +284,8 @@ export function CartButton() {
         className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
       >
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+          <DialogTitle className="flex items-center justify-between flex-wrap-reverse">
+            <div className="flex items-center flex-wrap gap-2">
               <span>Shopping Cart</span>
               {items.length > 0 && (
                 <Badge variant="outline" className="text-xs">
@@ -283,7 +298,7 @@ export function CartButton() {
                 variant="ghost"
                 size="sm"
                 onClick={clearCart}
-                className="text-destructive hover:text-destructive"
+                className="text-destructive hover:text-destructive ml-auto"
               >
                 Clear Cart
               </Button>
@@ -349,7 +364,7 @@ export function CartButton() {
 
         {items.length > 0 && (
           <>
-            <Separator className="my-4" />
+            <Separator />
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex justify-between">

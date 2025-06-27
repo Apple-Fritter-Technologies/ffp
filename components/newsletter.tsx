@@ -63,7 +63,7 @@ const Newsletter = () => {
         </p>
         <div className="max-w-md mx-auto">
           <form onSubmit={handleSubmit}>
-            <div className="flex rounded-full bg-accent-2/20 p-2 backdrop-blur-sm border border-accent-2/30">
+            <div className="flex md:rounded-full rounded-3xl bg-accent-2/20 p-2 backdrop-blur-sm border border-accent-2/30 flex-wrap">
               <input
                 type="email"
                 placeholder="Your email address"
@@ -75,7 +75,7 @@ const Newsletter = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="bg-accent-2 text-white px-8 py-3 rounded-full font-medium hover:bg-accent-3 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="flex-1 md:flex-none justify-center bg-accent-2 text-white px-8 py-3 rounded-full font-medium hover:bg-accent-3 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {isLoading ? "Subscribing..." : "Subscribe"}
