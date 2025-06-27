@@ -196,13 +196,15 @@ const PodcastsPage = () => {
         <div>
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
             {/* Channel Avatar */}
-            <div className="relative">
-              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-accent-2/30 shadow-2xl">
+            <div className="relative w-full md:w-auto">
+              <div className="w-full h-auto md:w-48 md:h-48 rounded-xl overflow-hidden border-4 border-accent-2/30 shadow-2xl">
                 <Image
-                  src="https://c10.patreonusercontent.com/4/patreon-media/p/campaign/14124586/0c3b965a0aed45f4b8583d027e1ad9a2/eyJoIjozNjAsInciOjM2MH0%3D/2.png?token-hash=RB3POm_h98K80Tbwyj6qMVlDqyACDweSz4iYvpQQnnw%3D&token-time=1750723200"
+                  src="/images/podcast-logo.png"
                   alt="The Household Reformation Podcast"
-                  width={128}
-                  height={128}
+                  width={228}
+                  height={228}
+                  priority
+                  quality={100}
                   className="w-full h-full object-cover"
                 />
               </div>

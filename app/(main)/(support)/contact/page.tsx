@@ -198,7 +198,7 @@ const ContactPage = () => {
               <h4 className="text-xl font-bold text-background mb-4">
                 Follow Us
               </h4>
-              <div className="flex gap-4">
+              <div className="flex gap-4 flex-wrap items-center">
                 {socialLinks.map((link) => (
                   <Link
                     key={link.name}

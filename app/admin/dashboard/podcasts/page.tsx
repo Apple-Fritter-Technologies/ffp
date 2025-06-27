@@ -129,7 +129,7 @@ const DashboardPodcastsPage = () => {
     <div className="container mx-auto py-8">
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center flex-wrap gap-2">
             <div>
               <CardTitle>Podcast Management</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">

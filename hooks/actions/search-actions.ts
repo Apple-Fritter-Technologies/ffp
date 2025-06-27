@@ -54,7 +54,7 @@ export const searchBooks = async (
     const res = await axios.get(
       `${ApiUrl}/api/books?search=${encodeURIComponent(query)}`
     );
-    return res.data.books || res.data || [];
+    return res.data || [];
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       return {
@@ -72,7 +72,7 @@ export const searchGenres = async (
     const res = await axios.get(
       `${ApiUrl}/api/genres?search=${encodeURIComponent(query)}`
     );
-    return res.data.genres || res.data || [];
+    return res.data || [];
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       return {
@@ -90,7 +90,7 @@ export const searchProducts = async (
     const res = await axios.get(
       `${ApiUrl}/api/shop?search=${encodeURIComponent(query)}`
     );
-    return res.data.products || res.data || [];
+    return res.data || [];
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       return {

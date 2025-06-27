@@ -114,7 +114,7 @@ export default function About() {
             </p>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-8 max-w-md mx-auto">
+            <div className="flex flex-wrap items-center justify-center gap-8 max-w-md mx-auto">
               <div className="text-center">
                 <div className="text-2xl font-bold text-background mb-1">
                   Reformed

@@ -109,27 +109,28 @@ export default function SupportPage() {
 
             {/* Primary Donation CTA */}
             <div className="mb-12">
-              <Link
-                href="https://buy.stripe.com/fZu00jcpCgqa7a43V41B602"
-                target="_blank"
-                className="group"
+              <Button
+                asChild
+                size="lg"
+                className="bg-gradient-to-r from-accent-2 to-accent-3 hover:from-accent-3 hover:to-accent-2 text-white md:py-6 md:text-xl font-bold transition-all duration-300 hover:scale-105 shadow-2xl shadow-accent-2/30 border-2 border-white/20 group-hover:shadow-accent-3/40 w-full"
               >
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-accent-2 to-accent-3 hover:from-accent-3 hover:to-accent-2 text-white px-12 py-6 text-xl font-bold transition-all duration-300 hover:scale-105 shadow-2xl shadow-accent-2/30 border-2 border-white/20 group-hover:shadow-accent-3/40"
+                <Link
+                  href="https://buy.stripe.com/fZu00jcpCgqa7a43V41B602"
+                  target="_blank"
+                  className="group"
                 >
                   <Gift className="w-6 h-6 mr-3 group-hover:animate-bounce" />
                   Donate Now - Make an Impact
                   <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <p className="text-accent-1/80 text-sm mt-4 font-light">
                 Secure donation through Stripe • Tax-deductible
               </p>
             </div>
 
             {/* Quick Impact Stats */}
-            <div className="grid grid-cols-3 gap-8 max-w-md mx-auto">
+            <div className="flex items-center justify-center gap-8 max-w-md mx-auto flex-wrap">
               <div className="text-center">
                 <div className="text-2xl font-bold text-background mb-1">
                   Kingdom
@@ -225,7 +226,7 @@ export default function SupportPage() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="bg-background/80 border-accent-2/30 hover:bg-accent-2/10 px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105"
+                  className="bg-background/80 border-accent-2/30 hover:bg-accent-2/10 px-8 py-4 md:text-lg font-semibold transition-all duration-300 hover:scale-105"
                 >
                   <Heart className="w-5 h-5 mr-2" />
                   Choose Your Impact Level
@@ -335,7 +336,7 @@ export default function SupportPage() {
                 >
                   <Button
                     size="lg"
-                    className="w-full bg-gradient-to-r from-accent-2 to-accent-3 hover:from-accent-3 hover:to-accent-2 text-white py-6 text-xl font-bold transition-all duration-300 hover:scale-105 shadow-xl group-hover:shadow-2xl border-2 border-white/10"
+                    className="w-full bg-gradient-to-r from-accent-2 to-accent-3 hover:from-accent-3 hover:to-accent-2 text-white md:py-6 md:text-xl font-bold transition-all duration-300 hover:scale-105 shadow-xl group-hover:shadow-2xl border-2 border-white/10"
                   >
                     <CreditCard className="w-6 h-6 mr-3" />
                     Donate Securely with Stripe
@@ -343,7 +344,7 @@ export default function SupportPage() {
                   </Button>
                 </Link>
 
-                <div className="flex items-center justify-center gap-4 mt-6 text-sm text-muted-foreground">
+                <div className="flex items-center justify-center gap-4 mt-6 text-sm text-muted-foreground flex-wrap">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500" />
                     <span>Secure</span>
@@ -526,7 +527,7 @@ export default function SupportPage() {
                 className="group"
               >
                 <Button
-                  className="bg-gradient-to-r from-accent-2 to-accent-3 hover:from-accent-3 hover:to-accent-2 text-white px-12 py-6 font-bold transition-all duration-300 hover:scale-105 shadow-lg text-lg border-2 border-white/20"
+                  className="bg-gradient-to-r from-accent-2 to-accent-3 hover:from-accent-3 hover:to-accent-2 text-white md:py-6 font-bold transition-all duration-300 hover:scale-105 shadow-lg md:text-lg border-2 border-white/20"
                   size="lg"
                 >
                   <Gift className="w-6 h-6 mr-3 group-hover:animate-bounce" />

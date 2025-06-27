@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     const genreId = searchParams.get("genreId");
+    const search = searchParams.get("search");
 
     if (id) {
       // get book by id
@@ -40,6 +41,41 @@ export async function GET(req: NextRequest) {
           { status: 404 }
         );
       }
+      return NextResponse.json(books, { status: 200 });
+    } else if (search) {
+      // search books by title, author, or description
+      const books = await prisma.book.findMany({
+        where: {
+          OR: [
+            {
+              title: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              author: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              description: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+          ],
+        },
+        include: {
+          genre: true,
+          bundleItems: true,
+          bundledInBooks: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
       return NextResponse.json(books, { status: 200 });
     } else {
       // get all books

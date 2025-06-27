@@ -212,7 +212,7 @@ const Navbar = () => {
 
         {/* Mobile Navigation Overlay */}
         <div
-          className={`fixed top-[95px] inset-0 z-10 bg-black/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
+          className={`fixed top-[80px] inset-0 z-10 bg-black/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
             isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
           onClick={() => setIsOpen(false)}

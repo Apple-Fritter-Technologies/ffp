@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
+    const search = searchParams.get("search");
 
     if (id) {
       // get store product by id
@@ -21,6 +22,30 @@ export async function GET(req: NextRequest) {
       }
 
       return NextResponse.json(product, { status: 200 });
+    } else if (search) {
+      // search products by title or description
+      const products = await prisma.storeProduct.findMany({
+        where: {
+          OR: [
+            {
+              title: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              description: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+          ],
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+      return NextResponse.json(products, { status: 200 });
     } else {
       // get all store products
       const products = await prisma.storeProduct.findMany({

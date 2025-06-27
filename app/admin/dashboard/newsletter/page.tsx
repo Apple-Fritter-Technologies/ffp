@@ -161,7 +161,7 @@ const DashboardNewsletterPage = () => {
     <div className="container mx-auto py-8">
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center flex-wrap gap-2">
             <div>
               <CardTitle className="flex items-center space-x-2">
                 <Mail className="w-5 h-5" />
@@ -183,7 +183,7 @@ const DashboardNewsletterPage = () => {
           {/* Stats Card */}
           <Card className="mb-6 border-l-4 border-l-green-500 bg-green-50/50">
             <CardContent className="pt-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h3 className="font-semibold text-green-900 mb-2">
                     Newsletter Analytics

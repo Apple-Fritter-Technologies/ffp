@@ -231,7 +231,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
       <div className="p-6 max-w-7xl mx-auto space-y-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-2">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">
               Admin Dashboard
@@ -682,7 +682,7 @@ export default function DashboardPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                   {data.monthlyRevenue.map((item, index) => {
                     const isCurrentMonth =
                       index === data.monthlyRevenue.length - 1;
@@ -697,7 +697,7 @@ export default function DashboardPage() {
                     return (
                       <div
                         key={index}
-                        className={`text-center p-4 rounded-lg border transition-all duration-300 hover:shadow-md ${
+                        className={`flex-1 min-w-fit text-center p-4 rounded-lg border transition-all duration-300 hover:shadow-md ${
                           isCurrentMonth
                             ? "border-blue-300 bg-blue-50 ring-2 ring-blue-200"
                             : "border-gray-200 bg-white hover:border-gray-300"
@@ -767,7 +767,7 @@ export default function DashboardPage() {
                   {data.recentOrders.slice(0, 5).map((order, index) => (
                     <div
                       key={order.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+                      className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 flex-wrap gap-2"
                     >
                       <div className="flex items-center gap-3">
                         <div
@@ -797,7 +797,7 @@ export default function DashboardPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right mlau">
                         <p className="font-semibold text-sm text-gray-900">
                           ${Number(order.totalPrice).toFixed(2)}
                         </p>
