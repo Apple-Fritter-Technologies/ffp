@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Admin Dashboard | FURLONG FIELD PRESS",
   description: "Administrative dashboard for FURLONG FIELD PRESS management",
+  metadataBase: new URL("https://furlongfieldpress.com"),
   robots: {
     index: false,
     follow: false,
