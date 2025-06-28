@@ -84,6 +84,30 @@ export const updatePodcast = async (podcast: Podcast) => {
   }
 };
 
+export const reorderPodcasts = async (orderedIds: string[]) => {
+  const sessionToken = await getSessionToken();
+  if (!sessionToken) {
+    return { error: "Unauthorized" };
+  }
+
+  try {
+    const res = await axios.patch(
+      `${ApiUrl}/api/podcasts`,
+      { orderedIds },
+      { headers: { Authorization: `Bearer ${sessionToken}` } }
+    );
+
+    return res.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      return {
+        error: error.response?.data?.error || "Failed to reorder podcasts",
+      };
+    }
+    return { error: "Failed to reorder podcasts" };
+  }
+};
+
 export const deletePodcast = async (id: string) => {
   const sessionToken = await getSessionToken();
 

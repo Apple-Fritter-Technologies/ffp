@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       // get all podcasts
       const podcasts = await prisma.podcast.findMany({
         orderBy: {
-          createdAt: "desc",
+          displayOrder: "asc",
         },
       });
       return NextResponse.json(podcasts, { status: 200 });
@@ -56,12 +56,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // get count of existing podcasts
+    const podcastCount = await prisma.podcast.count();
+
     const newPodcast = await prisma.podcast.create({
       data: {
         title,
         description,
         imageUrl,
         videoUrl,
+        displayOrder: podcastCount,
       },
     });
 
@@ -93,7 +97,8 @@ export async function PUT(req: NextRequest) {
     }
 
     const podcastData = await req.json();
-    const { title, description, imageUrl, videoUrl } = podcastData;
+    const { title, description, imageUrl, videoUrl, displayOrder } =
+      podcastData;
 
     if (!title || !videoUrl) {
       return NextResponse.json(
@@ -118,6 +123,7 @@ export async function PUT(req: NextRequest) {
         description,
         imageUrl,
         videoUrl,
+        displayOrder: displayOrder ?? 0,
       },
     });
 
@@ -125,6 +131,72 @@ export async function PUT(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to update podcast" },
+      { status: 500 }
+    );
+  }
+}
+
+// reorder podcasts
+export async function PATCH(req: NextRequest) {
+  try {
+    const auth = await verifySession(req);
+    if (!auth.authorized || auth.user?.metadata?.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { orderedIds } = body;
+
+    // Validate required fields
+    if (!orderedIds || !Array.isArray(orderedIds) || orderedIds.length === 0) {
+      return NextResponse.json(
+        { error: "Valid orderedIds array is required" },
+        { status: 400 }
+      );
+    }
+
+    // Verify all IDs exist in the database
+    const existingItems = await prisma.podcast.findMany({
+      where: {
+        id: {
+          in: orderedIds,
+        },
+      },
+    });
+
+    if (existingItems.length !== orderedIds.length) {
+      return NextResponse.json(
+        { error: "One or more podcast items do not exist" },
+        { status: 400 }
+      );
+    }
+
+    // Update the order of each item using a transaction
+    await prisma.$transaction(
+      orderedIds.map((id, index) =>
+        prisma.podcast.update({
+          where: { id },
+          data: { displayOrder: index },
+        })
+      )
+    );
+
+    // Fetch the updated podcast items
+    const updatedItems = await prisma.podcast.findMany({
+      orderBy: { displayOrder: "asc" },
+    });
+
+    return NextResponse.json(
+      {
+        message: "Podcast items reordered successfully",
+        items: updatedItems,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error reordering podcast items:", error);
+    return NextResponse.json(
+      { error: "Failed to reorder podcast items" },
       { status: 500 }
     );
   }

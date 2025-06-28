@@ -111,6 +111,7 @@ export interface Podcast {
   description?: string | null;
   imageUrl?: string | null;
   videoUrl: string;
+  displayOrder?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }

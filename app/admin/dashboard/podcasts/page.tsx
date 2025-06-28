@@ -22,12 +22,19 @@ import {
   Loader2,
   Play,
   Image as ImageIcon,
+  GripVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import PodcastModal from "../../components/podcast-modal";
 import { Podcast } from "@/types/interface";
-import { getPodcasts } from "@/hooks/actions/podcast-actions";
+import { getPodcasts, reorderPodcasts } from "@/hooks/actions/podcast-actions";
 import { formatDate } from "@/lib/utils";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 
 const DashboardPodcastsPage = () => {
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
@@ -65,6 +72,29 @@ const DashboardPodcastsPage = () => {
   const handleEdit = (podcast: Podcast) => {
     setSelectedPodcast(podcast);
     setIsEditing(true);
+  };
+
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(filteredPodcasts);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setPodcasts(items);
+
+    // Get all IDs in the new order
+    const orderedIds = items.map((item) => item.id);
+
+    // Send the new order to the server
+    const res = await reorderPodcasts(orderedIds);
+    if (res.error) {
+      toast.error(res.error);
+      // Revert to original order by refetching
+      fetchPodcasts();
+    } else {
+      toast.success("Podcasts reordered successfully");
+    }
   };
 
   const filteredPodcasts = podcasts?.filter((podcast) =>
@@ -163,67 +193,102 @@ const DashboardPodcastsPage = () => {
           </div>
 
           <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">Thumbnail</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Video</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPodcasts?.map((podcast) => (
-                  <TableRow key={podcast.id}>
-                    <TableCell>
-                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center overflow-hidden">
-                        {podcast.imageUrl ? (
-                          <img
-                            src={podcast.imageUrl}
-                            alt={podcast.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <ImageIcon className="w-6 h-6 text-muted-foreground" />
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium max-w-xs">
-                      <div className="truncate">{podcast.title}</div>
-                    </TableCell>
-                    <TableCell className="max-w-xs">
-                      <div className="text-sm text-muted-foreground">
-                        {truncateText(podcast.description)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Play className="w-4 h-4 text-muted-foreground" />
-                        <Badge variant="outline">Video</Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatDate(podcast.createdAt)}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          handleEdit(podcast);
-                          setOpen(true);
-                        }}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-8"></TableHead>
+                    <TableHead className="w-16">Thumbnail</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Video</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <Droppable droppableId="podcasts">
+                  {(provided) => (
+                    <TableBody
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                    >
+                      {filteredPodcasts?.map((podcast, index) => (
+                        <Draggable
+                          key={podcast.id}
+                          draggableId={podcast.id}
+                          index={index}
+                        >
+                          {(provided, snapshot) => (
+                            <TableRow
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`${
+                                snapshot.isDragging ? "bg-muted/50" : ""
+                              }`}
+                            >
+                              <TableCell>
+                                <div
+                                  {...provided.dragHandleProps}
+                                  className="cursor-grab active:cursor-grabbing"
+                                >
+                                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="w-12 h-12 bg-muted rounded flex items-center justify-center overflow-hidden">
+                                  {podcast.imageUrl ? (
+                                    <img
+                                      src={podcast.imageUrl}
+                                      alt={podcast.title}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = "none";
+                                      }}
+                                    />
+                                  ) : (
+                                    <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium max-w-xs">
+                                <div className="truncate">{podcast.title}</div>
+                              </TableCell>
+                              <TableCell className="max-w-xs">
+                                <div className="text-sm text-muted-foreground">
+                                  {truncateText(podcast.description)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  <Play className="w-4 h-4 text-muted-foreground" />
+                                  <Badge variant="outline">Video</Badge>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {formatDate(podcast.createdAt)}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    handleEdit(podcast);
+                                    setOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </TableBody>
+                  )}
+                </Droppable>
+              </Table>
+            </DragDropContext>
           </div>
 
           {filteredPodcasts?.length === 0 && podcasts?.length > 0 && (
