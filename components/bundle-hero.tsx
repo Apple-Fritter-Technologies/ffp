@@ -73,7 +73,7 @@ export default function BundleHero({ bundleBooks }: BundleHeroProps) {
   return (
     <section>
       {/* header */}
-      <div className="text-center mb-20 px-4 max-w-7xl mx-auto">
+      <div className="text-center md:mb-20 px-4 max-w-7xl mx-auto">
         <div className="inline-flex items-center gap-2 bg-gradient-to-r from-background/10 to-accent-3/10 backdrop-blur-sm px-4 py-2 rounded-full border border-accent-3/20 mb-6">
           <div className="w-2 h-2 bg-accent-3 rounded-full animate-pulse"></div>
           <span className="text-accent-3 text-sm font-medium tracking-wide uppercase">

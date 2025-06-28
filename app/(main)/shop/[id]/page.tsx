@@ -305,7 +305,7 @@ const ShopDetailPage = () => {
       {/* Background Pattern */}
       <GridPattern color="rgb(125 119 101)" />
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl z-10 space-y-6 relative">
+      <div className="container mx-auto px-4 max-w-7xl z-10 space-y-6 relative">
         {/* Enhanced Breadcrumb */}
         <nav className="flex items-center gap-3 text-sm">
           <div className="flex items-center gap-3 bg-card/50 backdrop-blur-sm px-4 py-2 rounded-full border border-accent-3/20">

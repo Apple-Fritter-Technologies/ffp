@@ -14,7 +14,7 @@ const IntroHero = () => {
       <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-br from-accent-3/20 to-accent-1/20 rounded-full blur-xl animate-pulse delay-1000"></div>
       <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-accent-2/10 rounded-full blur-lg animate-bounce delay-500"></div>
 
-      <div className="relative z-10 container mx-auto p-8 md:p-12">
+      <div className="relative z-10 container mx-auto p-8 px-4 md:p-12">
         <div className="flex flex-col items-center justify-center text-center space-y-8 max-w-4xl mx-auto">
           {/* Badge */}
           <div className="inline-flex items-center gap-3 bg-gradient-to-r from-background/10 to-accent-3/10 backdrop-blur-sm px-6 py-3 rounded-full border border-accent-3/20">

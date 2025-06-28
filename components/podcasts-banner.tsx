@@ -49,14 +49,14 @@ const PodcastsBanner = ({ podcasts }: PodcastsBannerProps) => {
   };
 
   return (
-    <section className="px-4 container mx-auto space-y-8">
+    <section>
       {/* the household reformation podcast */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-foreground/95 via-foreground/90 to-accent-2/20 backdrop-blur-md">
         {/* Floating Elements */}
         <div className="absolute top-8 right-8 w-32 h-32 bg-gradient-to-br from-accent-2/20 to-accent-3/20 rounded-full blur-2xl animate-pulse"></div>
         <div className="absolute bottom-8 left-8 w-24 h-24 bg-gradient-to-br from-accent-3/20 to-accent-1/20 rounded-full blur-xl animate-pulse delay-1000"></div>
 
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center p-8 md:p-12">
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center p-8 px-4 md:p-12">
           {/* Content */}
           <div className="space-y-8">
             {/* Badge */}
@@ -264,7 +264,7 @@ const PodcastsBanner = ({ podcasts }: PodcastsBannerProps) => {
                         className="flex items-center gap-2 bg-accent-3/10 hover:bg-accent-3/20 px-4 py-2 rounded-full transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <ChevronLeft className="w-4 h-4 text-accent-3 group-hover:text-accent-2" />
-                        <span className="text-xs text-accent-3 group-hover:text-accent-2 font-medium">
+                        <span className="hidden md:block text-xs text-accent-3 group-hover:text-accent-2 font-medium">
                           Previous
                         </span>
                       </button>
@@ -299,7 +299,7 @@ const PodcastsBanner = ({ podcasts }: PodcastsBannerProps) => {
                         disabled={podcasts.length <= 1}
                         className="flex items-center gap-2 bg-accent-3/10 hover:bg-accent-3/20 px-4 py-2 rounded-full transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <span className="text-xs text-accent-3 group-hover:text-accent-2 font-medium">
+                        <span className="hidden md:block text-xs text-accent-3 group-hover:text-accent-2 font-medium">
                           Next
                         </span>
                         <ChevronRight className="w-4 h-4 text-accent-3 group-hover:text-accent-2" />
@@ -308,79 +308,6 @@ const PodcastsBanner = ({ podcasts }: PodcastsBannerProps) => {
                   )}
                 </div>
               </div>
-
-              {/* Episode List Preview (shows latest 5 episodes) */}
-              {podcasts.length > 1 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-background/95 backdrop-blur-xl rounded-2xl border border-accent-3/30 shadow-xl opacity-0 hover:opacity-100 transition-all duration-300 max-h-0 overflow-hidden hover:max-h-96 hover:py-4 z-10">
-                  <div className="px-4 pb-2">
-                    <h4 className="text-sm font-semibold mb-3 text-accent-3">
-                      Recent Episodes
-                    </h4>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {podcasts.slice(0, 5).map((podcast, index) => {
-                        const podcastThumbnail =
-                          podcast.imageUrl ||
-                          getYouTubeThumbnail(podcast.videoUrl);
-
-                        return (
-                          <button
-                            key={podcast.id}
-                            onClick={() => setCurrentVideoIndex(index)}
-                            className={`w-full text-left p-3 rounded-xl transition-all duration-300 ${
-                              index === currentVideoIndex
-                                ? "bg-accent-2/20 border border-accent-2/30"
-                                : "hover:bg-accent-3/10"
-                            }`}
-                          >
-                            <div className="flex gap-3">
-                              <div className="relative w-16 h-12 bg-accent-3/20 rounded-lg overflow-hidden flex-shrink-0">
-                                {podcastThumbnail ? (
-                                  <img
-                                    src={podcastThumbnail}
-                                    alt={podcast.title}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="absolute inset-0 bg-gradient-to-br from-accent-2/20 to-accent-3/20" />
-                                )}
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <Play className="w-4 h-4 text-white drop-shadow-lg" />
-                                </div>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h5 className="text-sm font-medium line-clamp-1 mb-1">
-                                  {podcast.title}
-                                </h5>
-                                <div className="flex items-center gap-2 text-xs text-accent-3">
-                                  <span>Episode {index + 1}</span>
-                                  {podcast.createdAt && (
-                                    <>
-                                      <span>•</span>
-                                      <span>
-                                        {formatTimeAgo(podcast.createdAt)}
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {podcasts.length > 5 && (
-                      <div className="pt-3 border-t border-accent-3/20 mt-3">
-                        <Link
-                          href="/podcasts"
-                          className="text-xs text-accent-2 hover:text-accent-1 font-medium"
-                        >
-                          View all {podcasts.length} episodes →
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Floating Decorative Elements */}
               <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-br from-accent-2 to-accent-3 rounded-full animate-pulse shadow-lg"></div>

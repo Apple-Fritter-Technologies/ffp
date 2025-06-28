@@ -30,11 +30,11 @@ const Categories = ({ genres }: CategoriesProps) => {
   };
 
   return (
-    <section className="p-6 py-12 bg-foreground/90 rounded-3xl relative">
+    <section className="p-6 px-4 md:p-12 bg-foreground/90 rounded-3xl relative">
       {/* Background Grid Pattern */}
       <GridPattern />
 
-      <div className="px-4 max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
           <h3 className="text-4xl md:text-5xl font-bold font-title mb-4 text-background">

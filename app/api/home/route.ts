@@ -83,7 +83,7 @@ export async function GET() {
       orderBy: {
         createdAt: "desc",
       },
-      take: 4,
+      take: 5,
     });
 
     // Format the response

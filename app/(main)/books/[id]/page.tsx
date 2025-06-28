@@ -300,7 +300,7 @@ const BookDetailPage = () => {
       {/* Background Pattern */}
       <GridPattern color="rgb(125 119 101)" />
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl z-10 space-y-6 relative">
+      <div className="container mx-auto px-4 max-w-7xl z-10 space-y-6 relative">
         {/* Enhanced Breadcrumb */}
         <nav className="flex items-center gap-3 text-sm">
           <div className="flex items-center gap-3 bg-card/50 backdrop-blur-sm px-4 py-2 rounded-full border border-accent-3/20">
@@ -586,7 +586,7 @@ const BookDetailPage = () => {
                     disabled={!book.isAvailable || isAddingToCart}
                     variant="outline"
                     size="lg"
-                    className="flex-1 text-lg font-semibold bg-background/50 backdrop-blur-sm border-accent-3/30 hover:bg-accent-2/10 hover:border-accent-2/50 transition-all duration-300"
+                    className="flex-1 py-2 text-lg font-semibold bg-background/50 backdrop-blur-sm border-accent-3/30 hover:bg-accent-2/10 hover:border-accent-2/50 transition-all duration-300"
                   >
                     {isAddingToCart ? (
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
@@ -604,7 +604,7 @@ const BookDetailPage = () => {
                     onClick={handleBuyNow}
                     disabled={!book.isAvailable}
                     size="lg"
-                    className="flex-1 text-lg font-bold bg-gradient-to-r from-accent-2 to-accent-3 hover:from-accent-3 hover:to-accent-2 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+                    className="flex-1 py-2 text-lg font-bold bg-gradient-to-r from-accent-2 to-accent-3 hover:from-accent-3 hover:to-accent-2 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
                   >
                     {book.productType === "digital" ? (
                       <Download className="w-5 h-5 mr-2" />

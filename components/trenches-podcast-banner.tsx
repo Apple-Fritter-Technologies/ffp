@@ -10,7 +10,7 @@ const TrenchesPodcastBanner = () => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(120,119,198,0.1),transparent_50%)]"></div>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,107,107,0.08),transparent_50%)]"></div>
 
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-8 md:p-12">
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-8 px-4 md:p-12">
         {/* Content */}
         <div className="space-y-8">
           {/* Badge */}
